@@ -35,6 +35,22 @@ let routes = [
         meta: {
             requireAuth: true
         }
+    },
+    {
+        path: '/bigTypeManage',
+        name: 'bigTypeManage',
+        component: () => import('@/view/bigTypeManage.vue'),
+        meta: {
+            requireAuth: true
+        }
+    },
+    {
+        path: '/smallTypeManage',
+        name: 'smallTypeManage',
+        component: () => import('@/view/smallTypeManage.vue'),
+        meta: {
+            requireAuth: true
+        }
     }
 ]
 

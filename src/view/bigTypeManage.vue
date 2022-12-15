@@ -1,18 +1,18 @@
 <template>
-  <el-dialog v-model="announcementDialogVisible" :title="dialogTitle" width="50%" :show-close="false"
+  <el-dialog v-model="bigTypeDialogVisible" :title="dialogTitle" width="40%" :show-close="false"
              :close-on-click-modal="false">
-    <el-form :model="announcementForm">
-      <el-form-item label="标题" :label-width="formLabelWidth">
-        <el-input v-model="announcementForm.title" type="textarea"/>
+    <el-form :model="bigTypeForm">
+      <el-form-item label="名称" :label-width="formLabelWidth">
+        <el-input v-model="bigTypeForm.name"/>
       </el-form-item>
-      <el-form-item label="内容" :label-width="formLabelWidth">
-        <el-input v-model="announcementForm.content" type="textarea" rows="4"/>
+      <el-form-item label="排列顺序" :label-width="formLabelWidth">
+        <el-input-number v-model="bigTypeForm.sortNum" :min="1" :max="100" controls-position="right" value-on-clear="min"/>
       </el-form-item>
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="closeAnnouncementDialog">关闭</el-button>
-        <el-button type="primary" @click="saveAnnouncement" v-if="dialogType!==2">
+        <el-button @click="closeBigTypeDialog">关闭</el-button>
+        <el-button type="primary" @click="saveBigType" v-if="dialogType!==2">
           确定
         </el-button>
       </span>
@@ -20,28 +20,27 @@
   </el-dialog>
   <div>
     <el-input v-model="searchValue" v-on:keyup.enter="loadData" class="input-with-select" clearable
-              style="width: 333px" placeholder="根据标题搜索">
+              style="width: 333px" placeholder="根据名称搜索">
       <template #append>
         <el-button :icon="Search" @click="loadData"/>
       </template>
     </el-input>
-    <el-button type="primary" style="margin-left: 3px" @click="openAnnouncementDialog(1)">添加</el-button>
+    <el-button type="primary" style="margin-left: 3px" @click="openBigTypeDialog(1)">添加</el-button>
   </div>
   <div style="margin-top: 5px">
     <el-table :data="tableData" style="width: 100%" border="true">
-      <el-table-column prop="addDate" label="发布时间" width="200" sortable align="center"/>
-      <el-table-column prop="title" label="标题" width="300" align="center"/>
-      <el-table-column prop="content" label="内容" width="700" align="center" show-overflow-tooltip/>
+      <el-table-column prop="name" label="名称" align="center"/>
+      <el-table-column prop="sortNum" label="排列顺序" align="center" show-overflow-tooltip/>
       <el-table-column fixed="right" label="操作" width="150" align="center">
         <template #default="scope">
-          <el-button :icon="Search" circle @click="openAnnouncementDialog(2);getAnnouncementDetails(scope.row.id)"/>
+          <el-button :icon="Search" circle @click="openBigTypeDialog(2);getBigTypeDetails(scope.row.id)"/>
           <el-button type="success" :icon="Edit" circle
-                     @click="openAnnouncementDialog(3);getAnnouncementDetails(scope.row.id)"/>
+                     @click="openBigTypeDialog(3);getBigTypeDetails(scope.row.id)"/>
           <el-popconfirm
               confirm-button-text="是"
               cancel-button-text="否"
               icon-color="#626AEF"
-              title="你确定要删除这条公告吗?"
+              title="你确定要删除这个商品大类吗?"
               @confirm="confirmDelete(scope.row.id)"
           >
             <template #reference>
@@ -53,12 +52,12 @@
     </el-table>
     <div class="demo-pagination-block" style="margin-top: 5px">
       <el-pagination
-          v-model:current-page="page"
-          v-model:page-size="size"
+          v-model:current-page="pagination.currentPage"
+          v-model:page-size="pagination.pageSize"
           :small="small"
           :disabled="disabled"
           layout="total,prev, pager, next, jumper"
-          :total="total"
+          :total="pagination.total"
           @current-change="handleCurrentChange"
       />
     </div>
@@ -73,16 +72,18 @@ import axios from "axios";
 
 const searchValue = ref('');
 const tableData = ref([]);
-const page = ref(1);
-const size = ref(9);
-const total = ref(0);
-const announcementDialogVisible = ref(false);
+const bigTypeDialogVisible = ref(false);
 const dialogTitle = ref('');
 const dialogType = ref(0);
-const announcementForm = ref({
+const bigTypeForm = ref({
   id: 0,
-  title: '',
-  content: ''
+  name: '',
+  sortNum: 1
+});
+const pagination = ref({
+  currentPage: 1,
+  pageSize: 9,
+  total: 0
 });
 const formLabelWidth = '70px'
 
@@ -90,16 +91,16 @@ const formLabelWidth = '70px'
 const loadData = () => {
   let param = new URLSearchParams();
   if (searchValue !== null) {
-    param.append("title", searchValue.value);
+    param.append("name", searchValue.value);
   }
-  param.append("page", page.value);
-  param.append("size", size.value);
-  let url = getServerUrl('/announcement/list');
+  param.append("currentPage", pagination.value.currentPage);
+  param.append("pageSize", pagination.value.pageSize);
+  let url = getServerUrl('/bigType/list');
   axios
       .get(url, {params: param})
       .then(function (response) {
-        tableData.value = response.data.announcementList;
-        total.value = response.data.total;
+        tableData.value = response.data.bigTypeList;
+        pagination.value.total = response.data.total;
       })
       .catch(function (error) {
         console.log(error);
@@ -108,56 +109,61 @@ const loadData = () => {
 
 //刷新当前页
 const handleCurrentChange = (currentPage) => {
-  page.value = currentPage;
+  pagination.value.currentPage = currentPage;
   loadData();
 }
 
 //打开Dialog设置title
-const openAnnouncementDialog = (type) => {
+const openBigTypeDialog = (type) => {
   if (type === 1) {
     dialogType.value = 1;
-    dialogTitle.value = '添加公告';
-    announcementDialogVisible.value = true;
+    dialogTitle.value = '添加商品大类';
+    bigTypeDialogVisible.value = true;
   }
   if (type === 2) {
     dialogType.value = 2;
-    dialogTitle.value = '查看公告';
-    announcementDialogVisible.value = true;
+    dialogTitle.value = '查看商品大类';
+    bigTypeDialogVisible.value = true;
   }
   if (type === 3) {
     dialogType.value = 3;
-    dialogTitle.value = '修改公告';
-    announcementDialogVisible.value = true;
+    dialogTitle.value = '修改商品大类';
+    bigTypeDialogVisible.value = true;
   }
 }
 
-const closeAnnouncementDialog = () => {
-  announcementDialogVisible.value = false;
+const closeBigTypeDialog = () => {
+  bigTypeDialogVisible.value = false;
   resetValue();
 }
 
-//添加或修改公告
-const saveAnnouncement = () => {
+//添加或修改商品大类
+const saveBigType = () => {
   let param = new URLSearchParams();
-  if (announcementForm.value.id !== 0) {
-    param.append("id", announcementForm.value.id);
+  if (bigTypeForm.value.id !== 0) {
+    param.append("id", bigTypeForm.value.id);
   }
-  let title = announcementForm.value.title;
-  let content = announcementForm.value.content;
-  if (title === '') {
-    ElMessage.error("请输入标题");
+  let name = bigTypeForm.value.name;
+  let sortNum = bigTypeForm.value.sortNum;
+  if (name === '') {
+    ElMessage.error("请输入名称");
     return false;
   }
-  if (content === '') {
-    ElMessage.error("请输入内容");
+  if (sortNum === 0) {
+    ElMessage.error("请输入排列顺序");
     return false;
+  } else {
+    if (sortNum < 0) {
+      ElMessage.error("排列顺序的数字要大于0");
+      return false;
+    }
   }
-  param.append("title", title);
-  param.append("content", content);
-  let url = getServerUrl('/announcement/save');
+  param.append("name", name);
+  param.append("sortNum", sortNum);
+  let url = getServerUrl('/bigType/save');
   axios.post(url, param).then(function (response) {
     if (response.data.code === 0) {
-      announcementDialogVisible.value = false;
+      bigTypeDialogVisible.value = false;
       ElMessage.success(response.data.msg);
       loadData();
       resetValue();
@@ -170,15 +176,15 @@ const saveAnnouncement = () => {
   })
 }
 
-//根据id获取公告
-const getAnnouncementDetails = (id) => {
+//根据id获取商品大类
+const getBigTypeDetails = (id) => {
   if (id !== 0) {
-    announcementForm.value.id = id;
+    bigTypeForm.value.id = id;
   }
-  let url = getServerUrl("/announcement/findById?id=" + id);
+  let url = getServerUrl("/bigType/findById?id=" + id);
   axios.get(url).then(function (response) {
-    announcementForm.value.title = response.data.announcement.title;
-    announcementForm.value.content = response.data.announcement.content;
+    bigTypeForm.value.name = response.data.bigType.name;
+    bigTypeForm.value.sortNum = response.data.bigType.sortNum;
   }).catch(function (error) {
 
   })
@@ -186,14 +192,14 @@ const getAnnouncementDetails = (id) => {
 
 //重置值
 const resetValue = () => {
-  announcementForm.value.id = 0;
-  announcementForm.value.title = '';
-  announcementForm.value.content = '';
+  bigTypeForm.value.id = 0;
+  bigTypeForm.value.name = '';
+  bigTypeForm.value.sortNum = 0;
 }
 
-//删除公告
+//删除商品大类
 const confirmDelete = (id) => {
-  let url = getServerUrl('/announcement/delete?id=' + id);
+  let url = getServerUrl('/bigType/delete?id=' + id);
   axios.get(url).then(function (response) {
     if (response.data.code === 0) {
       ElMessage.success(response.data.msg);

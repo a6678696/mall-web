@@ -46,18 +46,22 @@
             </el-icon>
             <span>商品分类管理</span>
           </template>
-          <el-menu-item index="3-1">
-            <el-icon>
-              <DocumentRemove/>
-            </el-icon>
-            商品大类
-          </el-menu-item>
-          <el-menu-item index="3-2">
-            <el-icon>
-              <DocumentRemove/>
-            </el-icon>
-            商品小类
-          </el-menu-item>
+          <a @click="changCurrentCom('bigTypeManage')">
+            <el-menu-item index="3-1">
+              <el-icon>
+                <DocumentRemove/>
+              </el-icon>
+              商品大类
+            </el-menu-item>
+          </a>
+          <a @click="changCurrentCom('smallTypeManage')">
+            <el-menu-item index="3-2">
+              <el-icon>
+                <DocumentRemove/>
+              </el-icon>
+              商品小类
+            </el-menu-item>
+          </a>
         </el-sub-menu>
         <a @click="changCurrentCom('goodsManage')">
           <el-menu-item index="4">
@@ -134,6 +138,8 @@ import {
 } from "@element-plus/icons-vue";
 import announcementManage from '@/view/announcementManage.vue'
 import userManage from '@/view/userManage.vue'
+import bigTypeManage from '@/view/bigTypeManage.vue'
+import smallTypeManage from '@/view/smallTypeManage.vue'
 import router from "@/router";
 import {getServerUrl} from "@/util/url";
 import axios from "axios";
@@ -155,6 +161,14 @@ const changCurrentCom = (currentComName) => {
   if (currentComName === "announcementManage") {
     currentCom.value = announcementManage;
     currentBreadName.value = "公告管理";
+  }
+  if (currentComName === "bigTypeManage") {
+    currentCom.value = bigTypeManage;
+    currentBreadName.value = "商品分类管理 / 商品大类";
+  }
+  if (currentComName === "smallTypeManage") {
+    currentCom.value = smallTypeManage;
+    currentBreadName.value = "商品分类管理 / 商品小类";
   }
 }
 
@@ -229,9 +243,5 @@ const modifyPassword = () => {
 
 .item {
   margin-bottom: 18px;
-}
-
-.box-card {
-
 }
 </style>
