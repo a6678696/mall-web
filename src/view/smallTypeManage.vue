@@ -1,36 +1,36 @@
 <template>
   <el-dialog
-    v-model="smallTypeDialogVisible"
-    :title="dialogTitle"
-    width="40%"
-    :show-close="false"
-    :close-on-click-modal="false"
+      v-model="smallTypeDialogVisible"
+      :title="dialogTitle"
+      width="40%"
+      :show-close="false"
+      :close-on-click-modal="false"
   >
     <el-form :model="smallTypeForm">
       <el-form-item label="名称" :label-width="formLabelWidth">
-        <el-input v-model="smallTypeForm.name" />
+        <el-input v-model="smallTypeForm.name"/>
       </el-form-item>
       <el-form-item label="商品大类" :label-width="formLabelWidth">
         <el-select
-          v-model="smallTypeForm.bigTypeId"
-          filterable
-          placeholder="请选择商品大类..."
+            v-model="smallTypeForm.bigTypeId"
+            filterable
+            placeholder="请选择商品大类..."
         >
           <el-option
-            v-for="item in allBigTypeList"
-            :key="item.id"
-            :label="item.name"
-            :value="item.id"
+              v-for="item in allBigTypeList"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
           />
         </el-select>
       </el-form-item>
       <el-form-item label="排列顺序" :label-width="formLabelWidth">
         <el-input-number
-          v-model="smallTypeForm.sortNum"
-          :min="1"
-          :max="100"
-          controls-position="right"
-          value-on-clear="min"
+            v-model="smallTypeForm.sortNum"
+            :min="1"
+            :max="100"
+            controls-position="right"
+            value-on-clear="min"
         />
       </el-form-item>
     </el-form>
@@ -38,9 +38,9 @@
       <span class="dialog-footer">
         <el-button @click="closeSmallTypeDialog">关闭</el-button>
         <el-button
-          type="primary"
-          @click="saveSmallType"
-          v-if="dialogType !== 2"
+            type="primary"
+            @click="saveSmallType"
+            v-if="dialogType !== 2"
         >
           确定
         </el-button>
@@ -49,81 +49,83 @@
   </el-dialog>
   <div>
     <el-select
-      v-model="searchValue.bigTypeId"
-      filterable
-      clearable
-      placeholder="搜索条件 : 商品大类"
+        v-model="searchValue.bigTypeId"
+        filterable
+        clearable
+        placeholder="搜索条件 : 商品大类"
+        style="width: 244px"
     >
       <el-option
-        v-for="item in allBigTypeList"
-        :key="item.id"
-        :label="item.name"
-        :value="item.id"
+          v-for="item in allBigTypeList"
+          :key="item.id"
+          :label="item.name"
+          :value="item.id"
       />
     </el-select>
     <el-input
-      v-model="searchValue.name"
-      v-on:keyup.enter="loadData"
-      class="input-with-select"
-      clearable
-      style="width: 333px"
-      placeholder="搜索条件 : 名称"
+        v-model="searchValue.name"
+        v-on:keyup.enter="loadData"
+        class="input-with-select"
+        clearable
+        style="width: 288px;margin-left: 2px"
+        placeholder="搜索条件 : 名称"
     >
       <template #append>
-        <el-button :icon="Search" @click="loadData" />
+        <el-button :icon="Search" @click="loadData"/>
       </template>
     </el-input>
     <el-button
-      type="primary"
-      style="margin-left: 3px"
-      @click="openSmallTypeDialog(1)"
-      >添加</el-button
+        type="primary"
+        style="margin-left: 3px"
+        @click="openSmallTypeDialog(1)"
+    >添加
+    </el-button
     >
   </div>
   <div style="margin-top: 5px">
     <el-table :data="tableData" style="width: 100%" border="true">
-      <el-table-column prop="name" label="名称" align="center" />
+      <el-table-column prop="name" label="名称" align="center"/>
       <el-table-column
-        prop="bigTypeName"
-        label="商品大类名称"
-        sortable
-        align="center"
+          prop="bigTypeName"
+          label="商品大类名称"
+          sortable
+          align="center"
       />
       <el-table-column
-        prop="sortNum"
-        label="排列顺序"
-        align="center"
-        sortable
-        show-overflow-tooltip
+          prop="sortNum"
+          label="排列顺序"
+          align="center"
+          sortable
+          show-overflow-tooltip
       />
       <el-table-column fixed="right" label="操作" width="150" align="center">
         <template #default="scope">
           <el-button
-            :icon="Search"
-            circle
-            @click="
+              :icon="Search"
+              circle
+              @click="
               openSmallTypeDialog(2);
               getSmallTypeDetails(scope.row.id);
             "
           />
           <el-button
-            type="success"
-            :icon="Edit"
-            circle
-            @click="
+              type="success"
+              :icon="Edit"
+              circle
+              @click="
               openSmallTypeDialog(3);
               getSmallTypeDetails(scope.row.id);
             "
           />
           <el-popconfirm
-            confirm-button-text="是"
-            cancel-button-text="否"
-            icon-color="#626AEF"
-            title="你确定要删除这个商品小类吗?"
-            @confirm="confirmDelete(scope.row.id)"
+              confirm-button-text="是"
+              cancel-button-text="否"
+              icon-color="#626AEF"
+              title="你确定要删除这个商品小类吗?"
+              @confirm="confirmDelete(scope.row.id)"
           >
             <template #reference>
-              <el-button type="danger" :icon="Delete" circle />
+              <el-button type="danger" :icon="Delete" circle/>
             </template>
           </el-popconfirm>
         </template>
@@ -131,22 +133,22 @@
     </el-table>
     <div class="demo-pagination-block" style="margin-top: 5px">
       <el-pagination
-        v-model:current-page="pagination.currentPage"
-        v-model:page-size="pagination.pageSize"
-        :small="small"
-        :disabled="disabled"
-        layout="total,prev, pager, next, jumper"
-        :total="pagination.total"
-        @current-change="handleCurrentChange"
+          v-model:current-page="pagination.currentPage"
+          v-model:page-size="pagination.pageSize"
+          :small="small"
+          :disabled="disabled"
+          layout="total,prev, pager, next, jumper"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { Search, Edit, Delete } from "@element-plus/icons-vue";
-import { getServerUrl } from "@/util/url";
+import {ref, onMounted} from "vue";
+import {Search, Edit, Delete} from "@element-plus/icons-vue";
+import {getServerUrl} from "@/util/url";
 import axios from "axios";
 
 const searchValue = ref({
@@ -184,22 +186,23 @@ const loadData = () => {
   param.append("pageSize", pagination.value.pageSize);
   let url = getServerUrl("/smallType/list");
   axios
-    .get(url, { params: param })
-    .then(function (response) {
-      tableData.value = response.data.smallTypeList;
-      pagination.value.total = response.data.total;
-    })
-    .catch(function (error) {
-      console.log(error);
-    });
+      .get(url, {params: param})
+      .then(function (response) {
+        tableData.value = response.data.smallTypeList;
+        pagination.value.total = response.data.total;
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
   let url2 = getServerUrl("/bigType/getAllBigType");
   axios
-    .get(url2)
-    .then(function (response) {
-      allBigTypeList.value = response.data.allBigTypeList;
-      smallTypeForm.value.bigTypeId = allBigTypeList.value[0].id;
-    })
-    .catch(function (error) {});
+      .get(url2)
+      .then(function (response) {
+        allBigTypeList.value = response.data.allBigTypeList;
+        smallTypeForm.value.bigTypeId = allBigTypeList.value[0].id;
+      })
+      .catch(function (error) {
+      });
 };
 
 //刷新当前页
@@ -259,21 +262,21 @@ const saveSmallType = () => {
   param.append("sortNum", sortNum);
   let url = getServerUrl("/smallType/save");
   axios
-    .post(url, param)
-    .then(function (response) {
-      if (response.data.code === 0) {
-        smallTypeDialogVisible.value = false;
+      .post(url, param)
+      .then(function (response) {
+        if (response.data.code === 0) {
+          smallTypeDialogVisible.value = false;
+          ElMessage.success(response.data.msg);
+          loadData();
+          resetValue();
+        }
+        if (response.data.code === 500) {
+          ElMessage.error(response.data.msg);
+        }
+      })
+      .catch(function (error) {
         ElMessage.success(response.data.msg);
-        loadData();
-        resetValue();
-      }
-      if (response.data.code === 500) {
-        ElMessage.error(response.data.msg);
-      }
-    })
-    .catch(function (error) {
-      ElMessage.success(response.data.msg);
-    });
+      });
 };
 
 //根据id获取商品小类
@@ -283,13 +286,14 @@ const getSmallTypeDetails = (id) => {
   }
   let url = getServerUrl("/smallType/findById?id=" + id);
   axios
-    .get(url)
-    .then(function (response) {
-      smallTypeForm.value.name = response.data.smallType.name;
-      smallTypeForm.value.sortNum = response.data.smallType.sortNum;
-      smallTypeForm.value.bigTypeId = response.data.smallType.bigTypeId;
-    })
-    .catch(function (error) {});
+      .get(url)
+      .then(function (response) {
+        smallTypeForm.value.name = response.data.smallType.name;
+        smallTypeForm.value.sortNum = response.data.smallType.sortNum;
+        smallTypeForm.value.bigTypeId = response.data.smallType.bigTypeId;
+      })
+      .catch(function (error) {
+      });
 };
 
 //重置值
@@ -301,21 +305,23 @@ const resetValue = () => {
 
 //删除商品小类
 const confirmDelete = (id) => {
-  let url = getServerUrl("/smallType/delete?id=" + id);
+  let param = new URLSearchParams();
+  param.append("id", id);
+  let url = getServerUrl("/smallType/delete");
   axios
-    .get(url)
-    .then(function (response) {
-      if (response.data.code === 0) {
-        ElMessage.success(response.data.msg);
-        loadData();
-      }
-      if (response.data.code === 500) {
-        ElMessage.error(response.data.msg);
-      }
-    })
-    .catch(function (error) {
-      console.log(error);
-    });
+      .post(url, param)
+      .then(function (response) {
+        if (response.data.code === 0) {
+          ElMessage.success(response.data.msg);
+          loadData();
+        }
+        if (response.data.code === 500) {
+          ElMessage.error(response.data.msg);
+        }
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
 };
 
 onMounted(() => {

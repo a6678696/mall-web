@@ -140,6 +140,7 @@ import announcementManage from '@/view/announcementManage.vue'
 import userManage from '@/view/userManage.vue'
 import bigTypeManage from '@/view/bigTypeManage.vue'
 import smallTypeManage from '@/view/smallTypeManage.vue'
+import goodsManage from '@/view/goodsManage.vue'
 import router from "@/router";
 import {getServerUrl} from "@/util/url";
 import axios from "axios";
@@ -169,6 +170,10 @@ const changCurrentCom = (currentComName) => {
   if (currentComName === "smallTypeManage") {
     currentCom.value = smallTypeManage;
     currentBreadName.value = "商品分类管理 / 商品小类";
+  }
+  if (currentComName === "goodsManage") {
+    currentCom.value = goodsManage;
+    currentBreadName.value = "商品管理";
   }
 }
 

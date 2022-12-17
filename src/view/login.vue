@@ -68,7 +68,7 @@ const handleLogin = () => {
   param.append("password", form.value.password);
   let url = getServerUrl("/administrator/login");
   axios
-      .post(url, param)
+      .get(url, {params: param})
       .then(function (response) {
         if (response.data.code === 0) {
           window.sessionStorage.setItem("userName", response.data.userName);

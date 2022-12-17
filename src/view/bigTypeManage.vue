@@ -6,7 +6,8 @@
         <el-input v-model="bigTypeForm.name"/>
       </el-form-item>
       <el-form-item label="排列顺序" :label-width="formLabelWidth">
-        <el-input-number v-model="bigTypeForm.sortNum" :min="1" :max="100" controls-position="right" value-on-clear="min"/>
+        <el-input-number v-model="bigTypeForm.sortNum" :min="1" :max="100" controls-position="right"
+                         value-on-clear="min"/>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -30,7 +31,8 @@
   <div style="margin-top: 5px">
     <el-table :data="tableData" style="width: 100%" border="true">
       <el-table-column prop="name" label="名称" align="center"/>
-      <el-table-column prop="sortNum" label="排列顺序" align="center" show-overflow-tooltip/>
+      <el-table-column prop="sortNum" label="排列顺序" align="center"/>
+      <el-table-column prop="smallTypeNum" label="小类数量" align="center"/>
       <el-table-column fixed="right" label="操作" width="150" align="center">
         <template #default="scope">
           <el-button :icon="Search" circle @click="openBigTypeDialog(2);getBigTypeDetails(scope.row.id)"/>
@@ -41,7 +43,7 @@
               cancel-button-text="否"
               icon-color="#626AEF"
               title="你确定要删除这个商品大类吗?"
-              @confirm="confirmDelete(scope.row.id)"
+              @confirm="confirmDelete(scope.row.id,scope.row.smallTypeNum)"
           >
             <template #reference>
               <el-button type="danger" :icon="Delete" circle/>
@@ -198,9 +200,15 @@ const resetValue = () => {
 }
 
 //删除商品大类
-const confirmDelete = (id) => {
-  let url = getServerUrl('/bigType/delete?id=' + id);
-  axios.get(url).then(function (response) {
+const confirmDelete = (id, smallTypeNum) => {
+  if (smallTypeNum !== 0) {
+    ElMessage.error("你要删除的商品大类下有" + smallTypeNum + "个商品小类，删除前请删除所有商品小类");
+    return false;
+  }
+  let param = new URLSearchParams();
+  param.append("id", id);
+  let url = getServerUrl('/bigType/delete');
+  axios.post(url, param).then(function (response) {
     if (response.data.code === 0) {
       ElMessage.success(response.data.msg);
       loadData();

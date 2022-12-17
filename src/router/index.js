@@ -51,6 +51,14 @@ let routes = [
         meta: {
             requireAuth: true
         }
+    },
+    {
+        path: '/goodsManage',
+        name: 'goodsManage',
+        component: () => import('@/view/goodsManage.vue'),
+        meta: {
+            requireAuth: true
+        }
     }
 ]
 

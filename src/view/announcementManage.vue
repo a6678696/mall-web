@@ -193,8 +193,10 @@ const resetValue = () => {
 
 //删除公告
 const confirmDelete = (id) => {
-  let url = getServerUrl('/announcement/delete?id=' + id);
-  axios.get(url).then(function (response) {
+  let param = new URLSearchParams();
+  let url = getServerUrl('/announcement/delete');
+  param.append("id", id);
+  axios.post(url, param).then(function (response) {
     if (response.data.code === 0) {
       ElMessage.success(response.data.msg);
       loadData();
