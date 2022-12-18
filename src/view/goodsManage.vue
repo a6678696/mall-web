@@ -5,6 +5,7 @@
              width="60%"
              :show-close="false"
              :close-on-click-modal="false"
+             :close-on-press-escape="false"
   >
     <el-form :model="goodsForm">
       <el-form-item label="名称" :label-width="formLabelWidth">
@@ -28,17 +29,9 @@
       <el-form-item label="描述" :label-width="formLabelWidth">
         <el-input v-model="goodsForm.description"/>
       </el-form-item>
-      <p>商品详情</p>
-      <QuillEditor
-          v-model:content="content"
-          placeholder="这里输入商品详情..."
-          theme="snow"
-          ref="editor"
-          toolbar="full"
-          contentType="html"
-          :modules="modules"
-          style="height: 300px;"
-      />
+      <el-form-item label="详情" :label-width="formLabelWidth">
+        <myEditor ref="wangEditor"/>
+      </el-form-item>
     </el-form>
     <template #footer>
       <span class="dialog-footer">
@@ -50,6 +43,88 @@
         >
           确定
         </el-button>
+      </span>
+    </template>
+  </el-dialog>
+  <el-dialog
+      v-model="setCardImageDialogFormVisible"
+      width="30%"
+      :show-close="false"
+      :close-on-press-escape="false"
+      :close-on-click-modal="false"
+      title="更换商品卡片图片">
+    <el-upload
+        ref="uploadRef"
+        class="upload-demo"
+        :action="getServerUrl('/goods/setCardImage?goodsId='+goodsIdNow)"
+        :limit="1"
+        :auto-upload="false"
+        :before-upload="beforeimageUpload"
+    >
+      <template #trigger>
+        <el-button type="success">选择图片</el-button>
+      </template>
+
+      <template #tip>
+        <div class="el-upload__tip">
+          图片必须是jpg格式/图片大小不能超过2MB
+        </div>
+      </template>
+    </el-upload>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="setCardImageDialogFormVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitUpload">
+          确定
+        </el-button>
+      </span>
+    </template>
+  </el-dialog>
+  <el-dialog
+      fullscreen="true"
+      v-model="setSwiperImageDialogFormVisible"
+      width="40%"
+      :close-on-click-modal="false"
+      title="商品详情轮播图片管理">
+    <el-upload
+        ref="uploadRef2"
+        class="upload-demo"
+        :action="getServerUrl('/goods/updateGoodsDetailsSwiperImage?goodsId='+goodsIdNow)"
+        :limit="1"
+        :auto-upload="false"
+        :before-upload="beforeimageUpload"
+    >
+      <template #trigger>
+        <el-button type="success">选择图片</el-button>
+      </template>&nbsp;
+
+      <el-button type="primary" @click="submitUpload2">
+        上传到服务器
+      </el-button>
+
+      <template #tip>
+        <div class="el-upload__tip">
+          图片必须是jpg格式/图片大小不能超过2MB/一次只能上传一张
+        </div>
+      </template>
+    </el-upload>
+    <el-table :data="swiperImageList" v-show="swiperImageList.length>0" border style="width: 100%">
+      <el-table-column prop="imageName" label="图片" align="center">
+        <template #default="scope">
+          <el-image
+              :src="getServerUrl('')+'/image/goods/swiper/'+scope.row.imageName" style="width: 150px"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center">
+        <template #default="scope">
+          <el-button type="danger" @click="deleteGoodsDetailsSwiperImage(scope.row.imageName)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <h3 style="color: red" v-show="swiperImageList.length===0">当前商品没有详情轮播图图片</h3>
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button type="danger" @click="setSwiperImageDialogFormVisible = false">关闭</el-button>
       </span>
     </template>
   </el-dialog>
@@ -157,10 +232,7 @@
                 type="primary"
                 :icon="Picture"
                 circle
-                @click="
-              openGoodsDialog(3);
-              getGoodsDetails(scope.row.id);
-            "
+                @click="openSetCardImageDialog(scope.row.id)"
             />
           </el-tooltip>
           <el-tooltip
@@ -173,10 +245,7 @@
                 type="warning"
                 :icon="PictureRounded"
                 circle
-                @click="
-              openGoodsDialog(3);
-              getGoodsDetails(scope.row.id);
-            "
+                @click="openSetSwiperImageDialog(scope.row.id)"
             />
           </el-tooltip>
 
@@ -199,15 +268,15 @@
 
 <script setup>
 import {ref, onMounted} from "vue";
-import {Search, Edit, Delete, Picture, PictureRounded} from "@element-plus/icons-vue";
+import {Search, Edit, Delete, Picture, PictureRounded, Download, Plus, ZoomIn} from "@element-plus/icons-vue";
 import {getServerUrl} from "@/util/url";
 import axios from "axios";
-import {QuillEditor} from '@vueup/vue-quill'
-import '@vueup/vue-quill/dist/vue-quill.snow.css';
-import ImageUploader from 'quill-image-uploader';
-import BlotFormatter from 'quill-blot-formatter';
+import myEditor from "@/components/myEditor.vue";
 
+const uploadRef = ref();
+const uploadRef2 = ref();
 
+const wangEditor = ref();
 const searchValue = ref({
   name: "",
   typeId: null,
@@ -215,9 +284,13 @@ const searchValue = ref({
 const optionsGoodsType = ref([]);
 const allBigTypeList = ref();
 const tableData = ref([]);
+const swiperImageList = ref([]);
 const goodsDialogVisible = ref(false);
+const setCardImageDialogFormVisible = ref(false);
+const setSwiperImageDialogFormVisible = ref(false);
 const dialogTitle = ref("");
 const dialogType = ref(0);
+const goodsIdNow = ref(-1);
 const goodsForm = ref({
   id: 0,
   name: "",
@@ -232,41 +305,7 @@ const pagination = ref({
   total: 0,
 });
 const formLabelWidth = "70px";
-const content = ref('');
-const editor = ref(null);
-
-const modules = [{
-  name: 'imageUploader',
-  module: ImageUploader,
-  options: {
-    upload: file => {
-      return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append("image", file);
-        let url = getServerUrl('/goods/vueQuillUploadImage');
-        axios.post(url, formData)
-            .then(res => {
-              console.log(res.data)
-              resolve(res.data.url);
-            })
-            .catch(err => {
-              reject("Upload failed");
-              console.error("Error:", err)
-            })
-      });
-    }
-  }
-}, {
-  name: 'BlotFormatter',
-  module: BlotFormatter,
-  options: {
-    overlay: {
-      style: {
-        border: '2px solid red',
-      }
-    }
-  }
-}]
+const cardImageName = ref('default.png');
 
 //加载数据
 const loadData = () => {
@@ -343,7 +382,7 @@ const resetValue = () => {
   goodsForm.value.price = null;
   goodsForm.value.stock = null;
   goodsForm.value.description = '';
-  editor.value.setHTML('');
+  wangEditor.value.valueHtml = ''
 }
 const changeHotGoodsStatus = (id) => {
   let param = new URLSearchParams();
@@ -387,7 +426,7 @@ const saveGoods = () => {
     ElMessage.error("请输入描述");
     return false;
   }
-  if (content.value === '') {
+  if (wangEditor.value.valueHtml === '') {
     ElMessage.error("请输入商品详情");
     return false;
   }
@@ -400,7 +439,7 @@ const saveGoods = () => {
   param.append("price", goodsForm.value.price);
   param.append("stock", goodsForm.value.stock);
   param.append("description", goodsForm.value.description);
-  param.append("details", content.value);
+  param.append("details", wangEditor.value.valueHtml);
   let url = getServerUrl('/goods/save');
   axios.post(url, param).then(function (response) {
     goodsDialogVisible.value = false;
@@ -442,7 +481,90 @@ const getGoodsDetails = (id) => {
     goodsForm.value.price = response.data.goods.price;
     goodsForm.value.stock = response.data.goods.stock;
     goodsForm.value.description = response.data.goods.description;
-    editor.value.setHTML(response.data.goods.details);
+    wangEditor.value.valueHtml = response.data.goods.details;
+  }).catch(function (error) {
+
+  })
+}
+
+const submitUpload = () => {
+  if (uploadRef.value !== null) {
+    uploadRef.value.submit();
+    uploadRef.value.clearFiles();
+  }
+  setCardImageDialogFormVisible.value = false;
+  setTimeout(() => {
+    loadData();
+  }, 500)
+}
+
+const submitUpload2 = () => {
+  if (uploadRef2.value !== null) {
+    uploadRef2.value.submit();
+    uploadRef2.value.clearFiles();
+    setTimeout(() => {
+      loadSwiperImageList();
+    }, 500)
+  }
+}
+
+const openSetCardImageDialog = (id) => {
+  setCardImageDialogFormVisible.value = true;
+  goodsIdNow.value = id;
+}
+
+const beforeimageUpload = (file) => {
+  if (swiperImageList.value.length >= 8) {
+    ElMessage.error('最多上传8张图片,可以删除后再上传');
+    return false;
+  }
+  const isJPG = file.type === 'image/jpeg';
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isJPG) {
+    ElMessage.error('图片必须是jpg格式')
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过2M!')
+  }
+  return isJPG && isLt2M
+}
+
+const openSetSwiperImageDialog = (id) => {
+  setSwiperImageDialogFormVisible.value = true;
+  goodsIdNow.value = id;
+  loadSwiperImageList();
+}
+
+const loadSwiperImageList = () => {
+  let url = getServerUrl('/goods/getGoodsDetailsSwiperImageNameList?goodsId=' + goodsIdNow.value);
+  axios.get(url).then(function (response) {
+    let goodsDetailsSwiperImageNameList = [];
+    goodsDetailsSwiperImageNameList = response.data.imageNameLsit;
+    swiperImageList.value = [];
+    for (let i = 0; i < goodsDetailsSwiperImageNameList.length; i++) {
+      if (goodsDetailsSwiperImageNameList[i] !== '') {
+        swiperImageList.value[i] = {
+          imageName: goodsDetailsSwiperImageNameList[i]
+        }
+      }
+    }
+    console.log(swiperImageList.value);
+  }).catch(function (error) {
+
+  })
+}
+
+const deleteGoodsDetailsSwiperImage = (imageName) => {
+  let param = new URLSearchParams();
+  let goodsId = goodsIdNow.value;
+  param.append("goodsId", goodsId);
+  param.append("imageName", imageName);
+  let url = getServerUrl('/goods/deleteGoodsDetailsSwiperImage');
+  axios.post(url, param).then(function (response) {
+    setTimeout(() => {
+      loadSwiperImageList();
+    }, 500)
   }).catch(function (error) {
 
   })

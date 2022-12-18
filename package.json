@@ -10,11 +10,10 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.0.10",
-    "@vueup/vue-quill": "^1.0.0",
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-vue": "^5.1.12",
     "axios": "^1.2.1",
     "element-plus": "^2.2.26",
-    "quill-blot-formatter": "^1.0.5",
-    "quill-image-uploader": "^1.2.3",
     "vue": "^3.2.45",
     "vue-router": "^4.1.6"
   },
