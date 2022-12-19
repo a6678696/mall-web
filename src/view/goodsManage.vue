@@ -130,8 +130,32 @@
   </el-dialog>
   <div>
     <div>
+      <el-select clearable v-model="searchValue.optionsHotGoodsValue" placeholder="是否热卖" style="width: 100px;">
+        <el-option
+            v-for="item in optionsHotGoods"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+        />
+      </el-select>
+      <el-select clearable v-model="searchValue.optionsRecommendGoodsValue" placeholder="是否推荐" style="width: 100px;margin-left: 2px">
+        <el-option
+            v-for="item in optionsRecommendGoods"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+        />
+      </el-select>
+      <el-select clearable v-model="searchValue.optionsSwiperGoodsValue" placeholder="是否首页轮播图商品" style="width: 180px;margin-left: 2px">
+        <el-option
+            v-for="item in optionsSwiperGoods"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+        />
+      </el-select>
       <el-cascader v-model="searchValue.typeId" :options="optionsGoodsType" filterable clearable
-                   placeholder="搜索条件 : 商品小类">
+                   placeholder="商品小类" style="width: 180px;margin-left: 2px">
         <template #default="{ node, data }">
           <span>{{ data.label }}</span>
           <span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
@@ -142,20 +166,15 @@
           v-on:keyup.enter="loadData"
           class="input-with-select"
           clearable
-          style="width: 288px;margin-left: 2px"
-          placeholder="搜索条件 : 名称"
-      >
-        <template #append>
-          <el-button :icon="Search" @click="loadData"/>
-        </template>
-      </el-input>
+          style="width: 180px;margin-left: 2px"
+          placeholder="商品名称"/>
+      <el-button @click="loadData" style="margin-left: 2px">搜索</el-button>
       <el-button
           type="primary"
-          style="margin-left: 3px"
+          style="float: right"
           @click="openGoodsDialog(1)"
       >添加
-      </el-button
-      >
+      </el-button>
     </div>
   </div>
   <div style="margin-top: 5px">
@@ -176,6 +195,17 @@
               active-text="是"
               inactive-text="否"
               @change="changeHotGoodsStatus(scope.row.id)"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column label="是否推荐" width="110" align="center">
+        <template #default="scope">
+          <el-switch
+              v-model="scope.row.recommendGoods"
+              inline-prompt
+              active-text="是"
+              inactive-text="否"
+              @change="changeRecommendGoodsStatus(scope.row.id)"
           />
         </template>
       </el-table-column>
@@ -225,7 +255,7 @@
           <el-tooltip
               class="box-item"
               effect="dark"
-              content="设置首页轮播图图片"
+              content="设置商品卡片图片"
               placement="top"
           >
             <el-button
@@ -280,6 +310,9 @@ const wangEditor = ref();
 const searchValue = ref({
   name: "",
   typeId: null,
+  optionsHotGoodsValue: null,
+  optionsRecommendGoodsValue: null,
+  optionsSwiperGoodsValue: null
 });
 const optionsGoodsType = ref([]);
 const allBigTypeList = ref();
@@ -301,11 +334,41 @@ const goodsForm = ref({
 });
 const pagination = ref({
   currentPage: 1,
-  pageSize: 9,
+  pageSize: 5,
   total: 0,
 });
 const formLabelWidth = "70px";
 const cardImageName = ref('default.png');
+const optionsHotGoods = [
+  {
+    value: true,
+    label: '是',
+  },
+  {
+    value: false,
+    label: '否',
+  }
+]
+const optionsSwiperGoods = [
+  {
+    value: true,
+    label: '是',
+  },
+  {
+    value: false,
+    label: '否',
+  }
+]
+const optionsRecommendGoods = [
+  {
+    value: true,
+    label: '是',
+  },
+  {
+    value: false,
+    label: '否',
+  }
+]
 
 //加载数据
 const loadData = () => {
@@ -316,8 +379,19 @@ const loadData = () => {
   if (searchValue.value.typeId !== null) {
     param.append("smallTypeId", searchValue.value.typeId[1]);
   }
+  if (searchValue.value.optionsHotGoodsValue !== null) {
+    param.append("hotGoods", searchValue.value.optionsHotGoodsValue);
+  }
+  if (searchValue.value.optionsRecommendGoodsValue !== null) {
+    param.append("recommendGoods", searchValue.value.optionsRecommendGoodsValue);
+  }
+  if (searchValue.value.optionsSwiperGoodsValue !== null) {
+    param.append("swiperGoods", searchValue.value.optionsSwiperGoodsValue);
+  }
   param.append("currentPage", pagination.value.currentPage);
   param.append("pageSize", pagination.value.pageSize);
+  //给后端传一个值,给结果排序
+  param.append("sortByIdDesc", 1);
   let url = getServerUrl("/goods/list");
   axios
       .get(url, {params: param})
@@ -398,6 +472,17 @@ const changeSwiperGoodsStatus = (id) => {
   let param = new URLSearchParams();
   param.append("id", id);
   let url = getServerUrl('/goods/changeSwiperGoodsStatus');
+  axios.post(url, param).then(function (response) {
+    ElMessage.success(response.data.msg);
+  }).catch(function (error) {
+
+  })
+}
+
+const changeRecommendGoodsStatus = (id) => {
+  let param = new URLSearchParams();
+  param.append("id", id);
+  let url = getServerUrl('/goods/changeRecommendGoodsStatus');
   axios.post(url, param).then(function (response) {
     ElMessage.success(response.data.msg);
   }).catch(function (error) {
@@ -531,6 +616,7 @@ const beforeimageUpload = (file) => {
 }
 
 const openSetSwiperImageDialog = (id) => {
+  swiperImageList.value = [];
   setSwiperImageDialogFormVisible.value = true;
   goodsIdNow.value = id;
   loadSwiperImageList();
@@ -569,7 +655,11 @@ const deleteGoodsDetailsSwiperImage = (imageName) => {
 
   })
 }
-
+//刷新当前页
+const handleCurrentChange = (currentPage) => {
+  pagination.value.currentPage = currentPage;
+  loadData();
+}
 onMounted(() => {
   loadData();
 });

@@ -20,12 +20,10 @@
   </el-dialog>
   <div>
     <el-input v-model="searchValue" v-on:keyup.enter="loadData" class="input-with-select" clearable
-              style="width: 333px" placeholder="根据标题搜索">
-      <template #append>
-        <el-button :icon="Search" @click="loadData"/>
-      </template>
+              style="width: 222px" placeholder="标题">
     </el-input>
-    <el-button type="primary" style="margin-left: 3px" @click="openAnnouncementDialog(1)">添加</el-button>
+    <el-button @click="loadData" style="margin-left: 2px">搜索</el-button>
+    <el-button type="primary" style="float: right" @click="openAnnouncementDialog(1)">添加</el-button>
   </div>
   <div style="margin-top: 5px">
     <el-table :data="tableData" style="width: 100%" border="true">

@@ -52,8 +52,8 @@
         v-model="searchValue.bigTypeId"
         filterable
         clearable
-        placeholder="搜索条件 : 商品大类"
-        style="width: 244px"
+        placeholder="商品大类"
+        style="width: 222px"
     >
       <el-option
           v-for="item in allBigTypeList"
@@ -67,16 +67,14 @@
         v-on:keyup.enter="loadData"
         class="input-with-select"
         clearable
-        style="width: 288px;margin-left: 2px"
+        style="width: 222px;margin-left: 2px"
         placeholder="搜索条件 : 名称"
     >
-      <template #append>
-        <el-button :icon="Search" @click="loadData"/>
-      </template>
     </el-input>
+    <el-button @click="loadData" style="margin-left: 2px">搜索</el-button>
     <el-button
         type="primary"
-        style="margin-left: 3px"
+        style="float: right"
         @click="openSmallTypeDialog(1)"
     >添加
     </el-button
