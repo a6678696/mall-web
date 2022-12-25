@@ -19,7 +19,7 @@
   </el-dialog>
   <el-row class="tac" :gutter="2">
     <el-col :span="4">
-      <el-menu background-color="#334256" class="el-menu-vertical-demo el-menu" text-color="#fff" default-active="1">
+      <el-menu background-color="#334256" class="el-menu-vertical-demo el-menu" text-color="#fff" default-active="1" style="height: 100%">
         <el-menu-item>
           <img src="@/assets/images/logo2.png" style="width: 100%">
         </el-menu-item>

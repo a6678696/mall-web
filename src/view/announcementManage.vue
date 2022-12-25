@@ -51,12 +51,12 @@
     </el-table>
     <div class="demo-pagination-block" style="margin-top: 5px">
       <el-pagination
-          v-model:current-page="page"
-          v-model:page-size="size"
+          v-model:current-page="pagination.currentPage"
+          v-model:page-size="pagination.pageSize"
           :small="small"
           :disabled="disabled"
           layout="total,prev, pager, next, jumper"
-          :total="total"
+          :total="pagination.total"
           @current-change="handleCurrentChange"
       />
     </div>
@@ -71,9 +71,11 @@ import axios from "axios";
 
 const searchValue = ref('');
 const tableData = ref([]);
-const page = ref(1);
-const size = ref(9);
-const total = ref(0);
+const pagination = ref({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0,
+});
 const announcementDialogVisible = ref(false);
 const dialogTitle = ref('');
 const dialogType = ref(0);
@@ -90,14 +92,14 @@ const loadData = () => {
   if (searchValue !== null) {
     param.append("title", searchValue.value);
   }
-  param.append("page", page.value);
-  param.append("size", size.value);
+  param.append("page", pagination.value.currentPage);
+  param.append("size", pagination.value.pageSize);
   let url = getServerUrl('/announcement/list');
   axios
       .get(url, {params: param})
       .then(function (response) {
         tableData.value = response.data.announcementList;
-        total.value = response.data.total;
+        pagination.value.total = response.data.total;
       })
       .catch(function (error) {
         console.log(error);
@@ -106,7 +108,7 @@ const loadData = () => {
 
 //刷新当前页
 const handleCurrentChange = (currentPage) => {
-  page.value = currentPage;
+  pagination.value.currentPage = currentPage;
   loadData();
 }
 
