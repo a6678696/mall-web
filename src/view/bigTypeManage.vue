@@ -82,7 +82,7 @@ const bigTypeForm = ref({
 });
 const pagination = ref({
   currentPage: 1,
-  pageSize: 9,
+  pageSize: 10,
   total: 0
 });
 const formLabelWidth = '70px'

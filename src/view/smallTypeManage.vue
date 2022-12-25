@@ -165,7 +165,7 @@ const smallTypeForm = ref({
 });
 const pagination = ref({
   currentPage: 1,
-  pageSize: 9,
+  pageSize: 10,
   total: 0,
 });
 const allBigTypeList = ref();

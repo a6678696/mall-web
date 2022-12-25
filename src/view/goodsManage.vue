@@ -29,9 +29,17 @@
       <el-form-item label="描述" :label-width="formLabelWidth">
         <el-input v-model="goodsForm.description"/>
       </el-form-item>
-      <el-form-item label="详情" :label-width="formLabelWidth">
-        <myEditor ref="wangEditor"/>
-      </el-form-item>
+      <p>商品详情</p>
+      <QuillEditor
+          v-model:content="content"
+          placeholder="这里输入商品详情..."
+          theme="snow"
+          ref="editor"
+          toolbar="full"
+          contentType="html"
+          :modules="modules"
+          style="height: 500px;"
+      />
     </el-form>
     <template #footer>
       <span class="dialog-footer">
@@ -85,6 +93,7 @@
       v-model="setSwiperImageDialogFormVisible"
       width="40%"
       :close-on-click-modal="false"
+      @close="loadData"
       title="商品详情轮播图片管理">
     <el-upload
         ref="uploadRef2"
@@ -124,7 +133,7 @@
     <h3 style="color: red" v-show="swiperImageList.length===0">当前商品没有详情轮播图图片</h3>
     <template #footer>
       <span class="dialog-footer">
-        <el-button type="danger" @click="setSwiperImageDialogFormVisible = false">关闭</el-button>
+        <el-button type="danger" @click="setSwiperImageDialogFormVisible = false;">关闭</el-button>
       </span>
     </template>
   </el-dialog>
@@ -138,7 +147,8 @@
             :value="item.value"
         />
       </el-select>
-      <el-select clearable v-model="searchValue.optionsRecommendGoodsValue" placeholder="是否推荐" style="width: 100px;margin-left: 2px">
+      <el-select clearable v-model="searchValue.optionsRecommendGoodsValue" placeholder="是否推荐"
+                 style="width: 100px;margin-left: 2px">
         <el-option
             v-for="item in optionsRecommendGoods"
             :key="item.value"
@@ -146,7 +156,8 @@
             :value="item.value"
         />
       </el-select>
-      <el-select clearable v-model="searchValue.optionsSwiperGoodsValue" placeholder="是否首页轮播图商品" style="width: 180px;margin-left: 2px">
+      <el-select clearable v-model="searchValue.optionsSwiperGoodsValue" placeholder="是否首页轮播图商品"
+                 style="width: 180px;margin-left: 2px">
         <el-option
             v-for="item in optionsSwiperGoods"
             :key="item.value"
@@ -228,8 +239,7 @@
               :icon="Search"
               circle
               @click="
-              openGoodsDialog(2);
-              getGoodsDetails(scope.row.id);
+              openGoodsDialog(2,scope.row.id);
             "
           />
           <el-button
@@ -237,15 +247,14 @@
               :icon="Edit"
               circle
               @click="
-              openGoodsDialog(3);
-              getGoodsDetails(scope.row.id);
+              openGoodsDialog(3,scope.row.id);
             "
           />
           <el-popconfirm
               confirm-button-text="是"
               cancel-button-text="否"
               icon-color="#626AEF"
-              title="你确定要删除这个商品小类吗?"
+              title="你确定要删除这个商品吗?"
               @confirm="confirmDelete(scope.row.id)"
           >
             <template #reference>
@@ -301,12 +310,48 @@ import {ref, onMounted} from "vue";
 import {Search, Edit, Delete, Picture, PictureRounded, Download, Plus, ZoomIn} from "@element-plus/icons-vue";
 import {getServerUrl} from "@/util/url";
 import axios from "axios";
-import myEditor from "@/components/myEditor.vue";
+import {QuillEditor} from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import ImageUploader from 'quill-image-uploader';
+import BlotFormatter from 'quill-blot-formatter';
 
 const uploadRef = ref();
 const uploadRef2 = ref();
 
-const wangEditor = ref();
+const content = ref('');
+const editor = ref(null);
+const modules = [{
+  name: 'imageUploader',
+  module: ImageUploader,
+  options: {
+    upload: file => {
+      return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append("image", file);
+        let url = getServerUrl('/goods/vueQuillUploadImage');
+        axios.post(url, formData)
+            .then(res => {
+              console.log(res)
+              resolve(res.data.url);
+            })
+            .catch(err => {
+              reject("Upload failed");
+              console.error("Error:", err)
+            })
+      });
+    }
+  }
+}, {
+  name: 'BlotFormatter',
+  module: BlotFormatter,
+  options: {
+    overlay: {
+      style: {
+        border: '2px solid red',
+      }
+    }
+  }
+}]
 const searchValue = ref({
   name: "",
   typeId: null,
@@ -334,11 +379,10 @@ const goodsForm = ref({
 });
 const pagination = ref({
   currentPage: 1,
-  pageSize: 5,
+  pageSize: 10,
   total: 0,
 });
 const formLabelWidth = "70px";
-const cardImageName = ref('default.png');
 const optionsHotGoods = [
   {
     value: true,
@@ -427,7 +471,7 @@ const loadData = () => {
       });
 };
 //打开Dialog设置title
-const openGoodsDialog = (type) => {
+const openGoodsDialog = (type, id) => {
   if (type === 1) {
     dialogType.value = 1;
     dialogTitle.value = "添加商品";
@@ -437,11 +481,13 @@ const openGoodsDialog = (type) => {
     dialogType.value = 2;
     dialogTitle.value = "查看商品";
     goodsDialogVisible.value = true;
+    getGoodsDetails(id);
   }
   if (type === 3) {
     dialogType.value = 3;
     dialogTitle.value = "修改商品";
     goodsDialogVisible.value = true;
+    getGoodsDetails(id);
   }
 };
 const closeGoodsDialog = () => {
@@ -456,7 +502,7 @@ const resetValue = () => {
   goodsForm.value.price = null;
   goodsForm.value.stock = null;
   goodsForm.value.description = '';
-  wangEditor.value.valueHtml = ''
+  editor.value.setHTML("");
 }
 const changeHotGoodsStatus = (id) => {
   let param = new URLSearchParams();
@@ -473,7 +519,12 @@ const changeSwiperGoodsStatus = (id) => {
   param.append("id", id);
   let url = getServerUrl('/goods/changeSwiperGoodsStatus');
   axios.post(url, param).then(function (response) {
-    ElMessage.success(response.data.msg);
+    if (response.data.code === 0) {
+      ElMessage.success(response.data.msg);
+    } else if (response.data.code === 500) {
+      ElMessage.error(response.data.msg);
+    }
+    loadData();
   }).catch(function (error) {
 
   })
@@ -511,7 +562,8 @@ const saveGoods = () => {
     ElMessage.error("请输入描述");
     return false;
   }
-  if (wangEditor.value.valueHtml === '') {
+  //VueQuill富文本编辑器的内容为空时也有HTML: <p><br></p>
+  if (editor.value.getHTML() === '<p><br></p>') {
     ElMessage.error("请输入商品详情");
     return false;
   }
@@ -524,13 +576,13 @@ const saveGoods = () => {
   param.append("price", goodsForm.value.price);
   param.append("stock", goodsForm.value.stock);
   param.append("description", goodsForm.value.description);
-  param.append("details", wangEditor.value.valueHtml);
+  param.append("details", editor.value.getHTML());
   let url = getServerUrl('/goods/save');
   axios.post(url, param).then(function (response) {
     goodsDialogVisible.value = false;
     ElMessage.success(response.data.msg);
-    loadData();
     resetValue();
+    loadData();
   }).catch(function (error) {
 
   })
@@ -556,9 +608,7 @@ const confirmDelete = (id) => {
 
 //根据id获取商品
 const getGoodsDetails = (id) => {
-  if (id !== 0) {
-    goodsForm.value.id = id;
-  }
+  goodsForm.value.id = id;
   let url = getServerUrl("/goods/findById?id=" + id);
   axios.get(url).then(function (response) {
     goodsForm.value.name = response.data.goods.name;
@@ -566,7 +616,7 @@ const getGoodsDetails = (id) => {
     goodsForm.value.price = response.data.goods.price;
     goodsForm.value.stock = response.data.goods.stock;
     goodsForm.value.description = response.data.goods.description;
-    wangEditor.value.valueHtml = response.data.goods.details;
+    editor.value.setHTML(response.data.goods.details);
   }).catch(function (error) {
 
   })
