@@ -71,12 +71,20 @@
             <span>商品管理</span>
           </el-menu-item>
         </a>
-        <a @click="changCurrentCom('goodsManage')">
+        <a @click="changCurrentCom('orderManage')">
           <el-menu-item index="5">
             <el-icon>
               <CollectionTag/>
             </el-icon>
             <span>订单管理</span>
+          </el-menu-item>
+        </a>
+        <a @click="changCurrentCom('valuationManage')">
+          <el-menu-item index="6">
+            <el-icon>
+              <ChatDotRound />
+            </el-icon>
+            <span>评价管理</span>
           </el-menu-item>
         </a>
       </el-menu>
@@ -134,13 +142,16 @@ import {
   SwitchButton,
   CollectionTag,
   CaretBottom,
-  EditPen
+  EditPen,
+  ChatDotRound
 } from "@element-plus/icons-vue";
 import announcementManage from '@/view/announcementManage.vue'
 import userManage from '@/view/userManage.vue'
 import bigTypeManage from '@/view/bigTypeManage.vue'
 import smallTypeManage from '@/view/smallTypeManage.vue'
 import goodsManage from '@/view/goodsManage.vue'
+import orderManage from '@/view/orderManage.vue'
+import valuationManage from '@/view/valuationManage.vue'
 import router from "@/router";
 import {getServerUrl} from "@/util/url";
 import axios from "axios";
@@ -174,6 +185,14 @@ const changCurrentCom = (currentComName) => {
   if (currentComName === "goodsManage") {
     currentCom.value = goodsManage;
     currentBreadName.value = "商品管理";
+  }
+  if (currentComName === "orderManage") {
+    currentCom.value = orderManage;
+    currentBreadName.value = "订单管理";
+  }
+  if (currentComName === "valuationManage") {
+    currentCom.value = valuationManage;
+    currentBreadName.value = "评价管理";
   }
 }
 

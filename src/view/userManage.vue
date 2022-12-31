@@ -9,6 +9,22 @@
   </div>
   <div style="margin-top: 5px">
     <el-table :data="tableData" style="width: 100%" border="true">
+      <el-table-column type="expand">
+        <template #default="props">
+          <el-table :data="props.row.addressList">
+            <el-table-column label="收货人名称" prop="name" align="center" width="100" show-overflow-tooltip/>
+            <el-table-column label="手机号" prop="phoneNum" align="center" width="150"/>
+            <el-table-column label="省市区" prop="area" align="center" width="300"/>
+            <el-table-column label="详细地址" prop="details" align="center" width="200"/>
+            <el-table-column label="是否是默认收货地址" prop="goods.price" align="center" width="200">
+              <template #default="scope">
+                <strong v-show="scope.row.isSelected" style="color: orange">是</strong>
+                <strong v-show="!scope.row.isSelected" style="color: cornflowerblue">否</strong>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </el-table-column>
       <el-table-column prop="id" label="编号" width="100" align="center"/>
       <el-table-column prop="cardImageName" label="头像" width="85" align="center">
         <template #default="scope">
