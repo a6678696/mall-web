@@ -68,7 +68,7 @@
         class="input-with-select"
         clearable
         style="width: 222px;margin-left: 2px"
-        placeholder="搜索条件 : 名称"
+        placeholder="名称"
     >
     </el-input>
     <el-button @click="loadData" style="margin-left: 2px">搜索</el-button>
