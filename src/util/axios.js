@@ -2,6 +2,7 @@
  * 引入axios
  */
 import axios from "axios";
+import router from "@/router";
 
 /**
  * 请求的IP地址和端口
@@ -26,8 +27,33 @@ const httpService = axios.create({
  */
 httpService.interceptors.request.use(function (config) {
     //在发送请求之前做些什么
+    //获取token
+    const token = window.sessionStorage.getItem('token');
+    //token为空时跳转到登录页面
+    if (token === null) {
+        router.push('/');
+    } else {
+        axios
+            .get(baseUrl + '/token/check?token=' + token)
+            .then(function (res) {
+                //token验证失败跳转到登录页面
+                if (res.data.code === 500) {
+                    window.sessionStorage.clear();
+                    router.replace('/');
+                } else {
+                    //当前用户身份不是admin时
+                    if (res.data.roleName !== 'admin') {
+                        window.sessionStorage.clear();
+                        router.replace('/');
+                    }
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
     //设置请求头token
-    config.headers.token = window.sessionStorage.getItem('token');
+    config.headers.token = token;
     return config;
 }, function (error) {
     //对请求错误做些什么
