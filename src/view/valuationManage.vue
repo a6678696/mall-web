@@ -10,7 +10,7 @@
       <el-table-column fixed prop="cardImageName" label="展示图片" width="85" align="center">
         <template #default="scope">
           <el-image
-              :src="getServerUrl('')+'/image/goods/card/'+scope.row.goods.cardImageName" :fit="fit"/>
+              :src="axiosUtil.getServerUrl('/image/goods/card/'+scope.row.goods.cardImageName)" :fit="fit"/>
         </template>
       </el-table-column>
       <el-table-column fixed prop="goods.name" label="商品名称" width="200" align="center"/>
