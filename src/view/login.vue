@@ -40,10 +40,9 @@
 
 <script setup>
 import {ref} from "vue";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
 import {Lock, User} from "@element-plus/icons-vue";
 import router from "@/router";
+import axiosUtil from '@/util/axios';
 
 const form = ref({
   userName: "",
@@ -54,7 +53,8 @@ const rules = {
   userName: [{required: true, message: "请输入用户名", trigger: "blur"}],
   password: [{required: true, message: "请输入密码", trigger: "blur"}],
 };
-const handleLogin = () => {
+
+const handleLogin = async () => {
   if (form.value.userName === "") {
     ElMessage.error("用户名不能为空");
     return false;
@@ -63,25 +63,25 @@ const handleLogin = () => {
     ElMessage.error("密码不能为空");
     return false;
   }
-  let param = new URLSearchParams();
-  param.append("userName", form.value.userName);
-  param.append("password", form.value.password);
-  let url = getServerUrl("/administrator/login");
-  axios
-      .get(url, {params: param})
-      .then(function (response) {
-        if (response.data.code === 0) {
-          window.sessionStorage.setItem("userName", response.data.userName);
-          window.sessionStorage.setItem("administratorId", response.data.id);
-          router.push('/main');
-        } else if (response.data.code === 500) {
-          ElMessage.error(response.data.msg);
-        }
-      })
-      .catch(function (error) {
-        ElMessage.error("系统运行出错，请联系管理员");
-      });
-};
+  let params = new URLSearchParams();
+  params.append("userName", form.value.userName);
+  params.append("password", form.value.password);
+  let url = '/administrator/login';
+  try {
+    const result = await axiosUtil.get(url, params);
+    if (result.data.code === 0) {
+      window.sessionStorage.setItem("userName", result.data.userName);
+      window.sessionStorage.setItem("administratorId", result.data.id);
+      window.sessionStorage.setItem("token", result.data.token);
+      router.replace('/main');
+    } else if (result.data.code === 500) {
+      ElMessage.error(result.data.msg);
+    }
+  } catch (err) {
+    console.log("error:" + err);
+    ElMessage.error("服务器出错，请联系管理员！");
+  }
+}
 </script>
 
 <style scoped>

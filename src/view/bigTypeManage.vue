@@ -67,8 +67,7 @@
 <script setup>
 import {ref, onMounted} from "vue";
 import {Search, Edit, Delete} from "@element-plus/icons-vue";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
+import axiosUtil from '@/util/axios';
 
 const searchValue = ref('');
 const tableData = ref([]);
@@ -88,23 +87,17 @@ const pagination = ref({
 const formLabelWidth = '70px'
 
 //加载数据
-const loadData = () => {
-  let param = new URLSearchParams();
+const loadData = async () => {
+  let params = new URLSearchParams();
   if (searchValue !== null) {
-    param.append("name", searchValue.value);
+    params.append("name", searchValue.value);
   }
-  param.append("currentPage", pagination.value.currentPage);
-  param.append("pageSize", pagination.value.pageSize);
-  let url = getServerUrl('/bigType/list');
-  axios
-      .get(url, {params: param})
-      .then(function (response) {
-        tableData.value = response.data.bigTypeList;
-        pagination.value.total = response.data.total;
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+  params.append("currentPage", pagination.value.currentPage);
+  params.append("pageSize", pagination.value.pageSize);
+  let url = '/bigType/list';
+  const res = await axiosUtil.get(url, params);
+  tableData.value = res.data.bigTypeList;
+  pagination.value.total = res.data.total;
 }
 
 //刷新当前页
@@ -138,10 +131,10 @@ const closeBigTypeDialog = () => {
 }
 
 //添加或修改商品大类
-const saveBigType = () => {
-  let param = new URLSearchParams();
+const saveBigType = async () => {
+  let params = new URLSearchParams();
   if (bigTypeForm.value.id !== 0) {
-    param.append("id", bigTypeForm.value.id);
+    params.append("id", bigTypeForm.value.id);
   }
   let name = bigTypeForm.value.name;
   let sortNum = bigTypeForm.value.sortNum;
@@ -158,36 +151,31 @@ const saveBigType = () => {
       return false;
     }
   }
-  param.append("name", name);
-  param.append("sortNum", sortNum);
-  let url = getServerUrl('/bigType/save');
-  axios.post(url, param).then(function (response) {
-    if (response.data.code === 0) {
-      bigTypeDialogVisible.value = false;
-      ElMessage.success(response.data.msg);
-      loadData();
-      resetValue();
-    }
-    if (response.data.code === 500) {
-      ElMessage.error(response.data.msg);
-    }
-  }).catch(function (error) {
-    ElMessage.success(response.data.msg);
-  })
+  params.append("name", name);
+  params.append("sortNum", sortNum);
+  let url = '/bigType/save';
+  const res = await axiosUtil.post(url, params);
+  if (res.data.code === 0) {
+    bigTypeDialogVisible.value = false;
+    ElMessage.success(res.data.msg);
+    await loadData();
+    resetValue();
+  } else if (res.data.code === 500) {
+    ElMessage.error(res.data.msg);
+  }
 }
 
 //根据id获取商品大类
-const getBigTypeDetails = (id) => {
+const getBigTypeDetails = async (id) => {
   if (id !== 0) {
     bigTypeForm.value.id = id;
   }
-  let url = getServerUrl("/bigType/findById?id=" + id);
-  axios.get(url).then(function (response) {
-    bigTypeForm.value.name = response.data.bigType.name;
-    bigTypeForm.value.sortNum = response.data.bigType.sortNum;
-  }).catch(function (error) {
-
-  })
+  let url = "/bigType/findById";
+  let params = new URLSearchParams();
+  params.append("id", id);
+  const res = await axiosUtil.get(url, params);
+  bigTypeForm.value.name = res.data.bigType.name;
+  bigTypeForm.value.sortNum = res.data.bigType.sortNum;
 }
 
 //重置值
@@ -198,29 +186,25 @@ const resetValue = () => {
 }
 
 //删除商品大类
-const confirmDelete = (id, smallTypeNum) => {
+const confirmDelete = async (id, smallTypeNum) => {
   if (smallTypeNum !== 0) {
     ElMessage.error("你要删除的商品大类下有" + smallTypeNum + "个商品小类，删除前请删除所有商品小类");
     return false;
   }
-  let param = new URLSearchParams();
-  param.append("id", id);
-  let url = getServerUrl('/bigType/delete');
-  axios.post(url, param).then(function (response) {
-    if (response.data.code === 0) {
-      ElMessage.success(response.data.msg);
-      loadData();
-    }
-    if (response.data.code === 500) {
-      ElMessage.error(response.data.msg);
-    }
-  }).catch(function (error) {
-    console.log(error);
-  })
+  let params = new URLSearchParams();
+  params.append("id", id);
+  let url = '/bigType/delete';
+  const res = await axiosUtil.post(url, params);
+  if (res.data.code === 0) {
+    ElMessage.success(res.data.msg);
+    await loadData();
+  } else if (res.data.code === 500) {
+    ElMessage.error(res.data.msg);
+  }
 }
 
-onMounted(() => {
-  loadData();
+onMounted(async () => {
+  await loadData();
 });
 </script>
 

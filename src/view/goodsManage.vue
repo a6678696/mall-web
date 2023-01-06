@@ -13,7 +13,7 @@
       </el-form-item>
       <el-form-item label="商品小类" :label-width="formLabelWidth">
         <el-cascader v-model="goodsForm.typeId" :options="optionsGoodsType" filterable clearable
-                     placeholder="搜索条件 : 商品小类">
+                     placeholder="选择商品小类">
           <template #default="{ node, data }">
             <span>{{ data.label }}</span>
             <span v-if="!node.isLeaf"> ({{ data.children.length }}) </span>
@@ -64,7 +64,7 @@
     <el-upload
         ref="uploadRef"
         class="upload-demo"
-        :action="getServerUrl('/goods/setCardImage?goodsId='+goodsIdNow)"
+        :action="axiosUtil.getServerUrl('/goods/setCardImage?goodsId='+goodsIdNow)"
         :limit="1"
         :auto-upload="false"
         :before-upload="beforeimageUpload"
@@ -98,7 +98,7 @@
     <el-upload
         ref="uploadRef2"
         class="upload-demo"
-        :action="getServerUrl('/goods/updateGoodsDetailsSwiperImage?goodsId='+goodsIdNow)"
+        :action="axiosUtil.getServerUrl('/goods/updateGoodsDetailsSwiperImage?goodsId='+goodsIdNow)"
         :limit="1"
         :auto-upload="false"
         :before-upload="beforeimageUpload"
@@ -121,7 +121,7 @@
       <el-table-column prop="imageName" label="图片" align="center">
         <template #default="scope">
           <el-image
-              :src="getServerUrl('')+'/image/goods/swiper/'+scope.row.imageName" style="width: 150px"/>
+              :src="axiosUtil.getServerUrl('/image/goods/swiper/'+scope.row.imageName)" style="width: 150px"/>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center">
@@ -189,12 +189,12 @@
     </div>
   </div>
   <div style="margin-top: 5px">
-    <el-table :data="tableData" style="width: 100%" border="true">
+    <el-table :data="tableData" style="width: 100%" border="true" max-height="480">
       <el-table-column prop="name" fixed="left" width="300" label="名称" align="center"/>
       <el-table-column prop="cardImageName" label="展示图片" width="85" align="center">
         <template #default="scope">
           <el-image
-              :src="getServerUrl('')+'/image/goods/card/'+scope.row.cardImageName" :fit="fit"/>
+              :src="axiosUtil.getServerUrl('/image/goods/card/'+scope.row.cardImageName)" :fit="fit"/>
         </template>
       </el-table-column>
       <el-table-column prop="typeName" label="分类" width="250" align="center"/>
@@ -308,8 +308,7 @@
 <script setup>
 import {ref, onMounted} from "vue";
 import {Search, Edit, Delete, Picture, PictureRounded, Download, Plus, ZoomIn} from "@element-plus/icons-vue";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
+import axiosUtil from '@/util/axios';
 import {QuillEditor} from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import ImageUploader from 'quill-image-uploader';
@@ -328,7 +327,7 @@ const modules = [{
       return new Promise((resolve, reject) => {
         const formData = new FormData();
         formData.append("image", file);
-        let url = getServerUrl('/goods/vueQuillUploadImage');
+        let url = axiosUtil.getServerUrl() + '/goods/vueQuillUploadImage';
         axios.post(url, formData)
             .then(res => {
               console.log(res)
@@ -415,61 +414,50 @@ const optionsRecommendGoods = [
 ]
 
 //加载数据
-const loadData = () => {
-  let param = new URLSearchParams();
+const loadData = async () => {
+  let params = new URLSearchParams();
   if (searchValue.value.name !== "") {
-    param.append("name", searchValue.value.name);
+    params.append("name", searchValue.value.name);
   }
   if (searchValue.value.typeId !== null) {
-    param.append("smallTypeId", searchValue.value.typeId[1]);
+    params.append("smallTypeId", searchValue.value.typeId[1]);
   }
   if (searchValue.value.optionsHotGoodsValue !== null) {
-    param.append("hotGoods", searchValue.value.optionsHotGoodsValue);
+    params.append("hotGoods", searchValue.value.optionsHotGoodsValue);
   }
   if (searchValue.value.optionsRecommendGoodsValue !== null) {
-    param.append("recommendGoods", searchValue.value.optionsRecommendGoodsValue);
+    params.append("recommendGoods", searchValue.value.optionsRecommendGoodsValue);
   }
   if (searchValue.value.optionsSwiperGoodsValue !== null) {
-    param.append("swiperGoods", searchValue.value.optionsSwiperGoodsValue);
+    params.append("swiperGoods", searchValue.value.optionsSwiperGoodsValue);
   }
-  param.append("currentPage", pagination.value.currentPage);
-  param.append("pageSize", pagination.value.pageSize);
+  params.append("currentPage", pagination.value.currentPage);
+  params.append("pageSize", pagination.value.pageSize);
   //给后端传一个值,给结果排序
-  param.append("sortByIdDesc", 1);
-  let url = getServerUrl("/goods/list");
-  axios
-      .get(url, {params: param})
-      .then(function (response) {
-        tableData.value = response.data.goodsList;
-        pagination.value.total = response.data.total;
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
-  let url2 = getServerUrl("/bigType/getAllBigTypeRemoveSmallTypeNumIsZero");
+  params.append("sortByIdDesc", 1);
+  let url = "/goods/list";
+  const res = await axiosUtil.get(url, params);
+  tableData.value = res.data.goodsList;
+  pagination.value.total = res.data.total;
+  let url2 = '/bigType/getAllBigTypeRemoveSmallTypeNumIsZero';
   let options = [];
-  axios
-      .get(url2)
-      .then(function (response) {
-        let allBigTypeList = response.data.allBigTypeList;
-        for (let i = 0; i < allBigTypeList.length; i++) {
-          options[i] = {
-            value: allBigTypeList[i].id,
-            label: allBigTypeList[i].name,
-            children: []
-          }
-          for (let j = 0; j < allBigTypeList[i].smallTypeList.length; j++) {
-            options[i].children[j] = {
-              value: allBigTypeList[i].smallTypeList[j].id,
-              label: allBigTypeList[i].smallTypeList[j].name
-            }
-          }
-        }
-        optionsGoodsType.value = options;
-      })
-      .catch(function (error) {
-      });
-};
+  const res2 = await axiosUtil.get(url2);
+  let allBigTypeList = res2.data.allBigTypeList;
+  for (let i = 0; i < allBigTypeList.length; i++) {
+    options[i] = {
+      value: allBigTypeList[i].id,
+      label: allBigTypeList[i].name,
+      children: []
+    }
+    for (let j = 0; j < allBigTypeList[i].smallTypeList.length; j++) {
+      options[i].children[j] = {
+        value: allBigTypeList[i].smallTypeList[j].id,
+        label: allBigTypeList[i].smallTypeList[j].name
+      }
+    }
+  }
+  optionsGoodsType.value = options;
+}
 //打开Dialog设置title
 const openGoodsDialog = (type, id) => {
   if (type === 1) {
@@ -489,12 +477,15 @@ const openGoodsDialog = (type, id) => {
     goodsDialogVisible.value = true;
     getGoodsDetails(id);
   }
-};
+}
+
+//关闭Dialog
 const closeGoodsDialog = () => {
   goodsDialogVisible.value = false;
   resetValue();
-};
+}
 
+//重置值
 const resetValue = () => {
   goodsForm.value.id = 0;
   goodsForm.value.name = '';
@@ -504,44 +495,36 @@ const resetValue = () => {
   goodsForm.value.description = '';
   editor.value.setHTML("");
 }
-const changeHotGoodsStatus = (id) => {
-  let param = new URLSearchParams();
-  param.append("id", id);
-  let url = getServerUrl('/goods/changeHotGoodsStatus');
-  axios.post(url, param).then(function (response) {
-    ElMessage.success(response.data.msg);
-  }).catch(function (error) {
 
-  })
-}
-const changeSwiperGoodsStatus = (id) => {
-  let param = new URLSearchParams();
-  param.append("id", id);
-  let url = getServerUrl('/goods/changeSwiperGoodsStatus');
-  axios.post(url, param).then(function (response) {
-    if (response.data.code === 0) {
-      ElMessage.success(response.data.msg);
-    } else if (response.data.code === 500) {
-      ElMessage.error(response.data.msg);
-    }
-    loadData();
-  }).catch(function (error) {
-
-  })
+//设置商品热卖与否
+const changeHotGoodsStatus = async (id) => {
+  let params = new URLSearchParams();
+  params.append("id", id);
+  let url = '/goods/changeHotGoodsStatus';
+  const res = await axiosUtil.post(url, params);
+  ElMessage.success(res.data.msg);
 }
 
-const changeRecommendGoodsStatus = (id) => {
-  let param = new URLSearchParams();
-  param.append("id", id);
-  let url = getServerUrl('/goods/changeRecommendGoodsStatus');
-  axios.post(url, param).then(function (response) {
-    ElMessage.success(response.data.msg);
-  }).catch(function (error) {
-
-  })
+//设置轮播图商品与否
+const changeSwiperGoodsStatus = async (id) => {
+  let params = new URLSearchParams();
+  params.append("id", id);
+  let url = '/goods/changeSwiperGoodsStatus';
+  const res = await axiosUtil.post(url, params);
+  ElMessage.success(res.data.msg);
 }
 
-const saveGoods = () => {
+//设置商品推荐与否
+const changeRecommendGoodsStatus = async (id) => {
+  let params = new URLSearchParams();
+  params.append("id", id);
+  let url = '/goods/changeRecommendGoodsStatus';
+  const res = await axiosUtil.post(url, params);
+  ElMessage.success(res.data.msg);
+}
+
+//保存商品信息
+const saveGoods = async () => {
   if (goodsForm.value.name === '') {
     ElMessage.error("请输入名称");
     return false;
@@ -567,61 +550,55 @@ const saveGoods = () => {
     ElMessage.error("请输入商品详情");
     return false;
   }
-  let param = new URLSearchParams();
+  let params = new URLSearchParams();
   if (goodsForm.value.id !== 0) {
-    param.append("id", goodsForm.value.id);
+    params.append("id", goodsForm.value.id);
   }
-  param.append("name", goodsForm.value.name);
-  param.append("smallTypeId", goodsForm.value.typeId[1]);
-  param.append("price", goodsForm.value.price);
-  param.append("stock", goodsForm.value.stock);
-  param.append("description", goodsForm.value.description);
-  param.append("details", editor.value.getHTML());
-  let url = getServerUrl('/goods/save');
-  axios.post(url, param).then(function (response) {
-    goodsDialogVisible.value = false;
-    ElMessage.success(response.data.msg);
-    resetValue();
-    loadData();
-  }).catch(function (error) {
-
-  })
+  params.append("name", goodsForm.value.name);
+  params.append("smallTypeId", goodsForm.value.typeId[1]);
+  params.append("price", goodsForm.value.price);
+  params.append("stock", goodsForm.value.stock);
+  params.append("description", goodsForm.value.description);
+  params.append("details", editor.value.getHTML());
+  let url = '/goods/save';
+  const res = await axiosUtil.post(url, params);
+  goodsDialogVisible.value = false;
+  ElMessage.success(res.data.msg);
+  resetValue();
+  await loadData();
 }
 
 //删除商品
-const confirmDelete = (id) => {
-  let param = new URLSearchParams();
-  let url = getServerUrl('/goods/delete');
-  param.append("id", id);
-  axios.post(url, param).then(function (response) {
-    if (response.data.code === 0) {
-      ElMessage.success(response.data.msg);
-      loadData();
-    }
-    if (response.data.code === 500) {
-      ElMessage.error(response.data.msg);
-    }
-  }).catch(function (error) {
-    console.log(error);
-  })
+const confirmDelete = async (id) => {
+  let params = new URLSearchParams();
+  let url = '/goods/delete';
+  params.append("id", id);
+  const res = await axiosUtil.post(url, params);
+  if (res.data.code === 0) {
+    ElMessage.success(res.data.msg);
+    await loadData();
+  }
+  if (res.data.code === 500) {
+    ElMessage.error(res.data.msg);
+  }
 }
 
 //根据id获取商品
-const getGoodsDetails = (id) => {
+const getGoodsDetails = async (id) => {
   goodsForm.value.id = id;
-  let url = getServerUrl("/goods/findById?id=" + id);
-  axios.get(url).then(function (response) {
-    goodsForm.value.name = response.data.goods.name;
-    goodsForm.value.typeId = response.data.typeId;
-    goodsForm.value.price = response.data.goods.price;
-    goodsForm.value.stock = response.data.goods.stock;
-    goodsForm.value.description = response.data.goods.description;
-    editor.value.setHTML(response.data.goods.details);
-  }).catch(function (error) {
-
-  })
+  let url = '/goods/findById';
+  let params = new URLSearchParams();
+  params.append("id", id);
+  const res = await axiosUtil.get(url, params);
+  goodsForm.value.name = res.data.goods.name;
+  goodsForm.value.typeId = res.data.typeId;
+  goodsForm.value.price = res.data.goods.price;
+  goodsForm.value.stock = res.data.goods.stock;
+  goodsForm.value.description = res.data.goods.description;
+  editor.value.setHTML(res.data.goods.details);
 }
 
+//上传卡片图片
 const submitUpload = () => {
   if (uploadRef.value !== null) {
     uploadRef.value.submit();
@@ -633,6 +610,7 @@ const submitUpload = () => {
   }, 500)
 }
 
+//上传商品详情轮播图图片
 const submitUpload2 = () => {
   if (uploadRef2.value !== null) {
     uploadRef2.value.submit();
@@ -643,11 +621,13 @@ const submitUpload2 = () => {
   }
 }
 
+//打开设置卡片图片的Dialog
 const openSetCardImageDialog = (id) => {
   setCardImageDialogFormVisible.value = true;
   goodsIdNow.value = id;
 }
 
+//把图片上传到服务器前验证
 const beforeimageUpload = (file) => {
   if (swiperImageList.value.length >= 8) {
     ElMessage.error('最多上传8张图片,可以删除后再上传');
@@ -665,6 +645,7 @@ const beforeimageUpload = (file) => {
   return isJPG && isLt2M
 }
 
+//打开设置商品详情轮播图图片的Dialog
 const openSetSwiperImageDialog = (id) => {
   swiperImageList.value = [];
   setSwiperImageDialogFormVisible.value = true;
@@ -672,46 +653,43 @@ const openSetSwiperImageDialog = (id) => {
   loadSwiperImageList();
 }
 
-const loadSwiperImageList = () => {
-  let url = getServerUrl('/goods/getGoodsDetailsSwiperImageNameList?goodsId=' + goodsIdNow.value);
-  axios.get(url).then(function (response) {
-    let goodsDetailsSwiperImageNameList = [];
-    goodsDetailsSwiperImageNameList = response.data.imageNameLsit;
-    swiperImageList.value = [];
-    for (let i = 0; i < goodsDetailsSwiperImageNameList.length; i++) {
-      if (goodsDetailsSwiperImageNameList[i] !== '') {
-        swiperImageList.value[i] = {
-          imageName: goodsDetailsSwiperImageNameList[i]
-        }
+//加载商品详情轮播图图片
+const loadSwiperImageList = async () => {
+  let params = new URLSearchParams();
+  params.append("goodsId", goodsIdNow.value);
+  let url = '/goods/getGoodsDetailsSwiperImageNameList';
+  const res = await axiosUtil.get(url, params);
+  let goodsDetailsSwiperImageNameList = res.data.imageNameLsit;
+  swiperImageList.value = [];
+  for (let i = 0; i < goodsDetailsSwiperImageNameList.length; i++) {
+    if (goodsDetailsSwiperImageNameList[i] !== '') {
+      swiperImageList.value[i] = {
+        imageName: goodsDetailsSwiperImageNameList[i]
       }
     }
-    console.log(swiperImageList.value);
-  }).catch(function (error) {
-
-  })
+  }
 }
 
+//删除商品详情轮播图图片
 const deleteGoodsDetailsSwiperImage = (imageName) => {
-  let param = new URLSearchParams();
-  let goodsId = goodsIdNow.value;
-  param.append("goodsId", goodsId);
-  param.append("imageName", imageName);
-  let url = getServerUrl('/goods/deleteGoodsDetailsSwiperImage');
-  axios.post(url, param).then(function (response) {
-    setTimeout(() => {
-      loadSwiperImageList();
-    }, 500)
-  }).catch(function (error) {
-
-  })
+  let params = new URLSearchParams();
+  params.append("goodsId", goodsIdNow.value);
+  params.append("imageName", imageName);
+  let url = '/goods/deleteGoodsDetailsSwiperImage';
+  axiosUtil.post(url, params);
+  setTimeout(() => {
+    loadSwiperImageList();
+  }, 500)
 }
+
 //刷新当前页
 const handleCurrentChange = (currentPage) => {
   pagination.value.currentPage = currentPage;
   loadData();
 }
-onMounted(() => {
-  loadData();
+
+onMounted(async () => {
+  await loadData();
 });
 </script>
 

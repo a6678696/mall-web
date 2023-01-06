@@ -55,35 +55,28 @@
 <script setup>
 import {ref, onMounted} from "vue";
 import {Search, Edit, Delete} from "@element-plus/icons-vue";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
+import axiosUtil from '@/util/axios';
 
-const searchValue = ref('');
-const tableData = ref([]);
+const searchValue = ref('')
+const tableData = ref([])
 const pagination = ref({
   currentPage: 1,
   pageSize: 10,
   total: 0,
-});
+})
 
 //加载数据
-const loadData = () => {
-  let param = new URLSearchParams();
+const loadData = async () => {
+  let params = new URLSearchParams();
   if (searchValue.value !== '') {
-    param.append("goodsName", searchValue.value);
+    params.append("goodsName", searchValue.value);
   }
-  param.append("currentPage", pagination.value.currentPage);
-  param.append("pageSize", pagination.value.pageSize);
-  let url = getServerUrl('/valuation/list');
-  axios
-      .get(url, {params: param})
-      .then(function (response) {
-        tableData.value = response.data.valuationList;
-        pagination.value.total = response.data.total;
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+  params.append("currentPage", pagination.value.currentPage);
+  params.append("pageSize", pagination.value.pageSize);
+  let url = '/valuation/list';
+  const res = await axiosUtil.get(url, params);
+  tableData.value = res.data.valuationList;
+  pagination.value.total = res.data.total;
 }
 
 //刷新当前页
@@ -93,25 +86,21 @@ const handleCurrentChange = (currentPage) => {
 }
 
 //删除评价
-const confirmDelete = (id) => {
-  let param = new URLSearchParams();
-  let url = getServerUrl('/valuation/delete');
-  param.append("id", id);
-  axios.post(url, param).then(function (response) {
-    if (response.data.code === 0) {
-      ElMessage.success(response.data.msg);
-      loadData();
-    }
-    if (response.data.code === 500) {
-      ElMessage.error(response.data.msg);
-    }
-  }).catch(function (error) {
-    console.log(error);
-  })
+const confirmDelete = async (id) => {
+  let params = new URLSearchParams();
+  let url = '/valuation/delete';
+  params.append("id", id);
+  const res = await axiosUtil.post(url, params);
+  if (res.data.code === 0) {
+    ElMessage.success(res.data.msg);
+    await loadData();
+  } else if (res.data.code === 500) {
+    ElMessage.error(res.data.msg);
+  }
 }
 
-onMounted(() => {
-  loadData();
+onMounted(async () => {
+  await loadData();
 });
 </script>
 

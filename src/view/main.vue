@@ -19,7 +19,8 @@
   </el-dialog>
   <el-row class="tac" :gutter="2">
     <el-col :span="4">
-      <el-menu background-color="#334256" class="el-menu-vertical-demo el-menu" text-color="#fff" default-active="1" style="height: 100%">
+      <el-menu background-color="#334256" class="el-menu-vertical-demo el-menu" text-color="#fff" default-active="1"
+               style="height: 100%">
         <el-menu-item>
           <img src="@/assets/images/logo2.png" style="width: 100%">
         </el-menu-item>
@@ -82,7 +83,7 @@
         <a @click="changCurrentCom('valuationManage')">
           <el-menu-item index="6">
             <el-icon>
-              <ChatDotRound />
+              <ChatDotRound/>
             </el-icon>
             <span>评价管理</span>
           </el-menu-item>
@@ -153,8 +154,7 @@ import goodsManage from '@/view/goodsManage.vue'
 import orderManage from '@/view/orderManage.vue'
 import valuationManage from '@/view/valuationManage.vue'
 import router from "@/router";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
+import axiosUtil from '@/util/axios';
 
 const currentCom = shallowRef(announcementManage);
 const currentBreadName = ref('公告管理');
@@ -165,6 +165,7 @@ const modifyPasswordForm = ref({
 });
 const formLabelWidth = '70px'
 
+//切换页面
 const changCurrentCom = (currentComName) => {
   if (currentComName === "userManage") {
     currentCom.value = userManage;
@@ -196,6 +197,7 @@ const changCurrentCom = (currentComName) => {
   }
 }
 
+//注销登录
 const logout = () => {
   ElMessageBox
       .confirm(
@@ -208,7 +210,7 @@ const logout = () => {
           }
       )
       .then(() => {
-        window.sessionStorage.removeItem("userName");
+        window.sessionStorage.clear();
         router.replace('/');
       })
       .catch(() => {
@@ -216,7 +218,8 @@ const logout = () => {
       })
 }
 
-const modifyPassword = () => {
+//修改密码
+const modifyPassword = async () => {
   let password1 = modifyPasswordForm.value.password1;
   let password2 = modifyPasswordForm.value.password2;
   if (password1 === '' || password2 === '') {
@@ -229,24 +232,18 @@ const modifyPassword = () => {
     }
   }
   let administratorId = window.sessionStorage.getItem("administratorId");
-  let param = new URLSearchParams();
-  param.append("administratorId", administratorId);
-  param.append("password", modifyPasswordForm.value.password1);
-  let url = getServerUrl('/administrator/modifyPassword');
-  axios
-      .post(url, param)
-      .then(function (response) {
-        if (response.data.code === 0) {
-          ElMessage.success(response.data.msg);
-          modifyDialogVisible.value = false;
-        }
-        if (response.data.code === 500) {
-          ElMessage.error(response.data.msg);
-        }
-      })
-      .catch(function (error) {
-
-      })
+  let params = new URLSearchParams();
+  params.append("administratorId", administratorId);
+  params.append("password", modifyPasswordForm.value.password1);
+  let url = '/administrator/modifyPassword';
+  const res = await axiosUtil.post(url, params);
+  if (res.data.code === 0) {
+    ElMessage.success(res.data.msg);
+    modifyDialogVisible.value = false;
+  }
+  if (res.data.code === 500) {
+    ElMessage.error(res.data.msg);
+  }
 }
 </script>
 
@@ -259,13 +256,5 @@ const modifyPassword = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.text {
-  font-size: 14px;
-}
-
-.item {
-  margin-bottom: 18px;
 }
 </style>

@@ -146,8 +146,7 @@
 <script setup>
 import {ref, onMounted} from "vue";
 import {Search, Edit, Delete} from "@element-plus/icons-vue";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
+import axiosUtil from '@/util/axios';
 
 const searchValue = ref({
   name: "",
@@ -172,42 +171,31 @@ const allBigTypeList = ref();
 const formLabelWidth = "70px";
 
 //加载数据
-const loadData = () => {
-  let param = new URLSearchParams();
+const loadData = async () => {
+  let params = new URLSearchParams();
   if (searchValue.value.name !== "") {
-    param.append("name", searchValue.value.name);
+    params.append("name", searchValue.value.name);
   }
   if (searchValue.value.bigTypeId !== undefined) {
-    param.append("bigTypeId", searchValue.value.bigTypeId);
+    params.append("bigTypeId", searchValue.value.bigTypeId);
   }
-  param.append("currentPage", pagination.value.currentPage);
-  param.append("pageSize", pagination.value.pageSize);
-  let url = getServerUrl("/smallType/list");
-  axios
-      .get(url, {params: param})
-      .then(function (response) {
-        tableData.value = response.data.smallTypeList;
-        pagination.value.total = response.data.total;
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
-  let url2 = getServerUrl("/bigType/getAllBigType");
-  axios
-      .get(url2)
-      .then(function (response) {
-        allBigTypeList.value = response.data.allBigTypeList;
-        smallTypeForm.value.bigTypeId = allBigTypeList.value[0].id;
-      })
-      .catch(function (error) {
-      });
-};
+  params.append("currentPage", pagination.value.currentPage);
+  params.append("pageSize", pagination.value.pageSize);
+  let url = "/smallType/list";
+  const res = await axiosUtil.get(url, params);
+  tableData.value = res.data.smallTypeList;
+  pagination.value.total = res.data.total;
+  let url2 = "/bigType/getAllBigType";
+  const res2 = await axiosUtil.get(url2);
+  allBigTypeList.value = res2.data.allBigTypeList;
+  smallTypeForm.value.bigTypeId = allBigTypeList.value[0].id;
+}
 
 //刷新当前页
 const handleCurrentChange = (currentPage) => {
   pagination.value.currentPage = currentPage;
   loadData();
-};
+}
 
 //打开Dialog设置title
 const openSmallTypeDialog = (type) => {
@@ -226,18 +214,19 @@ const openSmallTypeDialog = (type) => {
     dialogTitle.value = "修改商品小类";
     smallTypeDialogVisible.value = true;
   }
-};
+}
 
+//关闭Dialog
 const closeSmallTypeDialog = () => {
   smallTypeDialogVisible.value = false;
   resetValue();
-};
+}
 
 //添加或修改商品小类
-const saveSmallType = () => {
-  let param = new URLSearchParams();
+const saveSmallType = async () => {
+  let params = new URLSearchParams();
   if (smallTypeForm.value.id !== 0) {
-    param.append("id", smallTypeForm.value.id);
+    params.append("id", smallTypeForm.value.id);
   }
   let name = smallTypeForm.value.name;
   let sortNum = smallTypeForm.value.sortNum;
@@ -255,75 +244,59 @@ const saveSmallType = () => {
     }
   }
   let bigTypeId = smallTypeForm.value.bigTypeId;
-  param.append("bigTypeId", bigTypeId);
-  param.append("name", name);
-  param.append("sortNum", sortNum);
-  let url = getServerUrl("/smallType/save");
-  axios
-      .post(url, param)
-      .then(function (response) {
-        if (response.data.code === 0) {
-          smallTypeDialogVisible.value = false;
-          ElMessage.success(response.data.msg);
-          loadData();
-          resetValue();
-        }
-        if (response.data.code === 500) {
-          ElMessage.error(response.data.msg);
-        }
-      })
-      .catch(function (error) {
-        ElMessage.success(response.data.msg);
-      });
-};
+  params.append("bigTypeId", bigTypeId);
+  params.append("name", name);
+  params.append("sortNum", sortNum);
+  let url = "/smallType/save";
+  const res = await axiosUtil.post(url, params);
+  if (res.data.code === 0) {
+    smallTypeDialogVisible.value = false;
+    ElMessage.success(res.data.msg);
+    await loadData();
+    resetValue();
+  } else if (res.data.code === 500) {
+    ElMessage.error(res.data.msg);
+  }
+}
 
 //根据id获取商品小类
-const getSmallTypeDetails = (id) => {
+const getSmallTypeDetails = async (id) => {
   if (id !== 0) {
     smallTypeForm.value.id = id;
   }
-  let url = getServerUrl("/smallType/findById?id=" + id);
-  axios
-      .get(url)
-      .then(function (response) {
-        smallTypeForm.value.name = response.data.smallType.name;
-        smallTypeForm.value.sortNum = response.data.smallType.sortNum;
-        smallTypeForm.value.bigTypeId = response.data.smallType.bigTypeId;
-      })
-      .catch(function (error) {
-      });
-};
+  let url = '/smallType/findById';
+  let params = new URLSearchParams();
+  params.append("id", id);
+  const res = await axiosUtil.get(url, params);
+  smallTypeForm.value.name = res.data.smallType.name;
+  smallTypeForm.value.sortNum = res.data.smallType.sortNum;
+  smallTypeForm.value.bigTypeId = res.data.smallType.bigTypeId;
+}
 
 //重置值
 const resetValue = () => {
   smallTypeForm.value.id = 0;
   smallTypeForm.value.name = "";
   smallTypeForm.value.sortNum = 0;
-};
+}
 
 //删除商品小类
-const confirmDelete = (id) => {
-  let param = new URLSearchParams();
-  param.append("id", id);
-  let url = getServerUrl("/smallType/delete");
-  axios
-      .post(url, param)
-      .then(function (response) {
-        if (response.data.code === 0) {
-          ElMessage.success(response.data.msg);
-          loadData();
-        }
-        if (response.data.code === 500) {
-          ElMessage.error(response.data.msg);
-        }
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+const confirmDelete = async (id) => {
+  let params = new URLSearchParams();
+  params.append("id", id);
+  let url = '/smallType/delete';
+  const res = await axiosUtil.post(url, params);
+  if (res.data.code === 0) {
+    ElMessage.success(res.data.msg);
+    await loadData();
+  }
+  if (res.data.code === 500) {
+    ElMessage.error(res.data.msg);
+  }
 };
 
-onMounted(() => {
-  loadData();
+onMounted(async () => {
+  await loadData();
 });
 </script>
 

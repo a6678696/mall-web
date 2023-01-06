@@ -18,8 +18,8 @@
             <el-table-column label="详细地址" prop="details" align="center" width="200"/>
             <el-table-column label="是否是默认收货地址" prop="goods.price" align="center" width="200">
               <template #default="scope">
-                <strong v-show="scope.row.isSelected" style="color: orange">是</strong>
-                <strong v-show="!scope.row.isSelected" style="color: cornflowerblue">否</strong>
+                <strong v-show="scope.row.isSelected" style="color: red">是</strong>
+                <strong v-show="!scope.row.isSelected">否</strong>
               </template>
             </el-table-column>
           </el-table>
@@ -29,7 +29,7 @@
       <el-table-column prop="cardImageName" label="头像" width="85" align="center">
         <template #default="scope">
           <el-image
-              :src="getServerUrl('')+'/image/customer/avatar/'+scope.row.avatarImageName" :fit="fit"/>
+              :src="axiosUtil.getServerUrl('/image/customer/avatar/'+scope.row.avatarImageName)" :fit="fit"/>
         </template>
       </el-table-column>
       <el-table-column prop="nickName" label="昵称" width="300" align="center"/>
@@ -51,42 +51,35 @@
 
 <script setup>
 import {ref, onMounted} from "vue";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
+import axiosUtil from '@/util/axios';
 
 const searchValue = ref({
   id: '',
   nickName: ''
 });
-const tableData = ref([]);
+const tableData = ref([])
 const pagination = ref({
   currentPage: 1,
   pageSize: 10,
   total: 0,
-});
+})
 const formLabelWidth = '70px'
 
 //加载数据
-const loadData = () => {
-  let param = new URLSearchParams();
+const loadData = async () => {
+  let params = new URLSearchParams();
   if (searchValue.value.nickName !== '') {
-    param.append("nickName", searchValue.value.nickName);
+    params.append("nickName", searchValue.value.nickName);
   }
   if (searchValue.value.id !== '') {
-    param.append("id", searchValue.value.id);
+    params.append("id", searchValue.value.id);
   }
-  param.append("currentPage", pagination.value.currentPage);
-  param.append("pageSize", pagination.value.pageSize);
-  let url = getServerUrl('/customer/list');
-  axios
-      .get(url, {params: param})
-      .then(function (response) {
-        tableData.value = response.data.customerList;
-        pagination.value.total = response.data.total;
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+  params.append("currentPage", pagination.value.currentPage);
+  params.append("pageSize", pagination.value.pageSize);
+  let url = '/customer/list';
+  const res = await axiosUtil.get(url, params);
+  tableData.value = res.data.customerList;
+  pagination.value.total = res.data.total;
 }
 
 //刷新当前页
@@ -95,8 +88,8 @@ const handleCurrentChange = (currentPage) => {
   loadData();
 }
 
-onMounted(() => {
-  loadData();
+onMounted(async () => {
+  await loadData();
 });
 </script>
 

@@ -66,8 +66,7 @@
 <script setup>
 import {ref, onMounted} from "vue";
 import {Search, Edit, Delete} from "@element-plus/icons-vue";
-import {getServerUrl} from "@/util/url";
-import axios from "axios";
+import axiosUtil from '@/util/axios';
 
 const searchValue = ref('');
 const tableData = ref([]);
@@ -87,23 +86,19 @@ const announcementForm = ref({
 const formLabelWidth = '70px'
 
 //加载数据
-const loadData = () => {
-  let param = new URLSearchParams();
+const loadData = async () => {
+  let params = new URLSearchParams();
   if (searchValue !== null) {
-    param.append("title", searchValue.value);
+    params.append("title", searchValue.value);
   }
-  param.append("page", pagination.value.currentPage);
-  param.append("size", pagination.value.pageSize);
-  let url = getServerUrl('/announcement/list');
-  axios
-      .get(url, {params: param})
-      .then(function (response) {
-        tableData.value = response.data.announcementList;
-        pagination.value.total = response.data.total;
-      })
-      .catch(function (error) {
-        console.log(error);
-      });
+  params.append("page", pagination.value.currentPage);
+  params.append("size", pagination.value.pageSize);
+  let url = '/announcement/list';
+  const result = await axiosUtil.get(url, params);
+  if (result.data.code === 0) {
+    tableData.value = result.data.announcementList;
+    pagination.value.total = result.data.total;
+  }
 }
 
 //刷新当前页
@@ -137,10 +132,10 @@ const closeAnnouncementDialog = () => {
 }
 
 //添加或修改公告
-const saveAnnouncement = () => {
-  let param = new URLSearchParams();
+const saveAnnouncement = async () => {
+  let params = new URLSearchParams();
   if (announcementForm.value.id !== 0) {
-    param.append("id", announcementForm.value.id);
+    params.append("id", announcementForm.value.id);
   }
   let title = announcementForm.value.title;
   let content = announcementForm.value.content;
@@ -152,36 +147,34 @@ const saveAnnouncement = () => {
     ElMessage.error("请输入内容");
     return false;
   }
-  param.append("title", title);
-  param.append("content", content);
-  let url = getServerUrl('/announcement/save');
-  axios.post(url, param).then(function (response) {
-    if (response.data.code === 0) {
-      announcementDialogVisible.value = false;
-      ElMessage.success(response.data.msg);
-      loadData();
-      resetValue();
-    }
-    if (response.data.code === 500) {
-      ElMessage.error(response.data.msg);
-    }
-  }).catch(function (error) {
-    ElMessage.success(response.data.msg);
-  })
+  params.append("title", title);
+  params.append("content", content);
+  let url = '/announcement/save';
+  const result = await axiosUtil.post(url, params);
+  if (result.data.code === 0) {
+    announcementDialogVisible.value = false;
+    ElMessage.success(result.data.msg);
+    await loadData();
+    resetValue();
+  }
+  if (result.data.code === 500) {
+    ElMessage.error(result.data.msg);
+  }
 }
 
 //根据id获取公告
-const getAnnouncementDetails = (id) => {
+const getAnnouncementDetails = async (id) => {
   if (id !== 0) {
     announcementForm.value.id = id;
   }
-  let url = getServerUrl("/announcement/findById?id=" + id);
-  axios.get(url).then(function (response) {
-    announcementForm.value.title = response.data.announcement.title;
-    announcementForm.value.content = response.data.announcement.content;
-  }).catch(function (error) {
-
-  })
+  let url = "/announcement/findById";
+  let params = new URLSearchParams();
+  params.append("id", id);
+  const res = await axiosUtil.get(url, params);
+  if (res.data.code === 0) {
+    announcementForm.value.title = res.data.announcement.title;
+    announcementForm.value.content = res.data.announcement.content;
+  }
 }
 
 //重置值
@@ -192,25 +185,22 @@ const resetValue = () => {
 }
 
 //删除公告
-const confirmDelete = (id) => {
-  let param = new URLSearchParams();
-  let url = getServerUrl('/announcement/delete');
-  param.append("id", id);
-  axios.post(url, param).then(function (response) {
-    if (response.data.code === 0) {
-      ElMessage.success(response.data.msg);
-      loadData();
-    }
-    if (response.data.code === 500) {
-      ElMessage.error(response.data.msg);
-    }
-  }).catch(function (error) {
-    console.log(error);
-  })
+const confirmDelete = async (id) => {
+  let params = new URLSearchParams();
+  let url = '/announcement/delete';
+  params.append("id", id);
+  const result = await axiosUtil.post(url, params);
+  if (result.data.code === 0) {
+    ElMessage.success(result.data.msg);
+    await loadData();
+  }
+  if (result.data.code === 500) {
+    ElMessage.error(result.data.msg);
+  }
 }
 
-onMounted(() => {
-  loadData();
+onMounted(async () => {
+  await loadData();
 });
 </script>
 
